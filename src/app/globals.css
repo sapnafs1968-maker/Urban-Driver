@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Gujarati:wght@400;600;700&family=Noto+Sans+Gurmukhi:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Malayalam:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-apple-stack: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", "SF Pro Text", "Noto Sans", "Noto Sans Devanagari", "Noto Sans Tamil", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", "Noto Sans Malayalam", "Noto Sans Gujarati", "Noto Sans Gurmukhi", "Noto Nastaliq Urdu", sans-serif;
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F6F8FA;
+  --surface-card: #FFFFFF;
+  --accent-teal: #13A89E;
+  --accent-soft-blue: #EAF2FF;
+  --brand-navy: #142B45;
+  --text-primary: #171A21;
+  --text-secondary: #667085;
+}
+
+/* Application-wide Light Theme Enforcement */
+html {
+  color-scheme: light !important;
+  background-color: #F6F8FA;
+}
+
+body {
+  font-family: var(--font-apple-stack);
+  background-color: #F6F8FA;
+  color: #171A21;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
+}
+
+/* RTL Support for Urdu */
+[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+}
+
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Apple-inspired frosted glass components (Light Theme Only) */
+.apple-glass {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+/* Apple-inspired Card Styling (Light Theme Only) */
+.apple-card {
+  background: #FFFFFF;
+  border-radius: 1.25rem;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-card:hover {
+  box-shadow: 0 10px 25px -5px rgba(20, 43, 69, 0.08), 0 8px 10px -6px rgba(20, 43, 69, 0.04);
+  transform: translateY(-2px);
+}
+
+/* Apple Button Feel */
+.apple-btn-primary {
+  background: #142B45;
+  color: #FFFFFF;
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-btn-primary:hover {
+  background: #1e3a5f;
+  transform: translateY(-1px);
+}
+
+.apple-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.apple-btn-teal {
+  background: #13A89E;
+  color: #FFFFFF;
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-btn-teal:hover {
+  background: #0e7c75;
+  transform: translateY(-1px);
+}
+
+.apple-btn-teal:active {
+  transform: scale(0.98);
+}
+
+/* Senior Citizen High Contrast Accessibility Mode */
+.senior-mode-active {
+  font-size: 1.25rem !important;
+  line-height: 1.65 !important;
+}
+
+.senior-mode-active button,
+.senior-mode-active a {
+  min-height: 54px !important;
+}
+
+.senior-mode-active h1 {
+  font-size: 2.5rem !important;
+  font-weight: 900 !important;
+}
+
+.senior-mode-active h2 {
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+}
+
+.senior-mode-active h3 {
+  font-size: 1.65rem !important;
+  font-weight: 800 !important;
+}
+
+/* Refined custom scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
+}
