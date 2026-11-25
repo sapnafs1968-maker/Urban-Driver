@@ -141,19 +141,19 @@ export const Navbar: React.FC = () => {
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-xs transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-2 h-16 sm:h-20">
 
             {/* Left: Brand Logo & Typography */}
-            <div className="flex items-center gap-3">
-              <Link href="/" className="flex items-center gap-2.5 group">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-tealDark to-brand-teal flex items-center justify-center text-white shadow-md shadow-brand-teal/20 group-hover:scale-[1.03] transition-transform">
+            <div className="flex items-center gap-2 min-w-0">
+              <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-2xl bg-gradient-to-tr from-brand-tealDark to-brand-teal flex items-center justify-center text-white shadow-md shadow-brand-teal/20 group-hover:scale-[1.03] transition-transform">
                   <Car className="w-5 h-5" />
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-base sm:text-lg font-black tracking-tight text-brand-navy flex items-center gap-1.5">
-                    URBAN DRIVER
-                    <span className="text-[10px] bg-brand-softBlue text-brand-teal font-bold px-2 py-0.5 rounded-full border border-brand-teal/20 tracking-wider">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm sm:text-lg font-black tracking-tight text-brand-navy flex items-center gap-1.5 truncate">
+                    <span className="truncate">URBAN DRIVER</span>
+                    <span className="hidden xs:inline-block sm:inline-block text-[10px] bg-brand-softBlue text-brand-teal font-bold px-2 py-0.5 rounded-full border border-brand-teal/20 tracking-wider shrink-0">
                       {t.pilotTag || 'PILOT'}
                     </span>
                   </span>
@@ -184,21 +184,21 @@ export const Navbar: React.FC = () => {
             </nav>
 
             {/* Right: Actions Center */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
 
               {/* Senior Mode Toggle (Available for Customers/Seniors) */}
               {currentUser && currentUser.role === 'customer' && (
                 <button
                   onClick={toggleSeniorMode}
                   aria-label="Toggle Senior Citizen Mode"
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs ${seniorMode
+                  className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs ${seniorMode
                     ? 'bg-emerald-600 text-white hover:bg-emerald-700 ring-2 ring-emerald-400/40'
                     : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200/80 border border-slate-200'
                     }`}
                   title="Senior Citizen Mode: Enlarged text, high contrast, simplified booking"
                 >
                   <HeartHandshake className="w-4 h-4 text-emerald-400" />
-                  <span className="hidden sm:inline">
+                  <span className="hidden md:inline">
                     {seniorMode ? t.seniorModeOn || 'Senior Mode ON' : t.seniorMode || 'Senior Mode'}
                   </span>
                 </button>
@@ -213,7 +213,7 @@ export const Navbar: React.FC = () => {
                   {/* Read Screen Aloud Button */}
                   <button
                     onClick={handleReadAloud}
-                    className="p-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-brand-navy rounded-full border border-slate-200 transition-colors"
+                    className="hidden sm:flex p-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-brand-navy rounded-full border border-slate-200 transition-colors"
                     title={t.readAloud || 'Read Screen Aloud'}
                   >
                     <Volume2 className="w-4 h-4 text-brand-teal" />
@@ -223,7 +223,7 @@ export const Navbar: React.FC = () => {
                   <div className="relative" ref={notifRef}>
                     <button
                       onClick={() => setNotifPopoverOpen(!notifPopoverOpen)}
-                      className="p-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-brand-navy rounded-full border border-slate-200 transition-colors relative"
+                      className="p-2.5 sm:p-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-brand-navy rounded-full border border-slate-200 transition-colors relative min-w-[40px] min-h-[40px] flex items-center justify-center"
                       title="Notifications"
                     >
                       <Bell className="w-4 h-4" />
@@ -236,7 +236,7 @@ export const Navbar: React.FC = () => {
 
                     {/* Notification Popover Dropdown */}
                     {notifPopoverOpen && (
-                      <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95">
+                      <div className="fixed inset-x-3 top-16 sm:inset-auto sm:absolute sm:right-0 sm:top-auto sm:mt-2 sm:w-96 max-h-[75dvh] overflow-y-auto bg-white border border-slate-200 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                           <span className="font-bold text-sm text-slate-900">
                             {t.navNotifications || 'Notifications'} ({unreadCount})
@@ -307,7 +307,7 @@ export const Navbar: React.FC = () => {
 
                     {/* Profile Dropdown Menu */}
                     {profileDropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-3xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+                      <div className="fixed inset-x-3 top-16 sm:inset-auto sm:absolute sm:right-0 sm:top-auto sm:mt-2 sm:w-64 max-h-[75dvh] overflow-y-auto bg-white border border-slate-200 rounded-3xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
                         {/* User Identity Header */}
                         <div className="px-4 py-3 bg-slate-50 rounded-2xl mb-1 border border-slate-100">
                           <p className="text-sm font-bold text-slate-900 truncate">
@@ -376,7 +376,7 @@ export const Navbar: React.FC = () => {
                 </>
               ) : (
                 /* Unauthenticated / Visitor Actions */
-                <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2">
                   <Link
                     href="/login"
                     className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-brand-navy hover:bg-slate-100 rounded-full transition-all"
@@ -396,7 +396,7 @@ export const Navbar: React.FC = () => {
               {/* Mobile Hamburger Toggle */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-colors"
+                className="lg:hidden p-2.5 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label="Toggle mobile menu"
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -407,7 +407,37 @@ export const Navbar: React.FC = () => {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-3 animate-in slide-in-from-top-2 duration-200">
+          <div className="lg:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-3 max-h-[calc(100dvh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+            {/* Quick Accessibility Actions on Mobile */}
+            {currentUser && (
+              <div className="flex flex-wrap gap-2 pb-2 border-b border-slate-100">
+                {currentUser.role === 'customer' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toggleSeniorMode();
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`flex-1 min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold ${
+                      seniorMode
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-100 text-slate-800 border border-slate-200'
+                    }`}
+                  >
+                    <HeartHandshake className="w-4 h-4 text-emerald-500" />
+                    <span>{seniorMode ? t.seniorModeOn || 'Senior Mode ON' : t.seniorMode || 'Senior Mode'}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleReadAloud}
+                  className="min-h-[44px] px-3 py-2 bg-slate-100 text-slate-800 rounded-xl border border-slate-200 text-xs font-bold flex items-center justify-center gap-1.5"
+                >
+                  <Volume2 className="w-4 h-4 text-brand-teal" />
+                  <span>{t.readAloud || 'Read Aloud'}</span>
+                </button>
+              </div>
+            )}
             {/* Nav Links */}
             <div className="space-y-1">
               {navLinks.map((link) => (

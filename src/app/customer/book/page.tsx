@@ -31,7 +31,7 @@ function BookDriverContent() {
     vehicles,
     drivers,
     trustedDriverIds,
-    createBooking,
+    createBookingAsync,
     addRecurringSchedule,
     pricingConfig,
     language,
@@ -64,13 +64,17 @@ function BookDriverContent() {
   const [recurringTitle, setRecurringTitle] = useState('Weekly Hospital Routine Checkup');
 
   // Selected Driver
-  const [selectedDriverId, setSelectedDriverId] = useState<string>('auto_match');
+  const initialPreferredDriver = searchParams.get('preferredDriverId') || 'auto_match';
+  const [selectedDriverId, setSelectedDriverId] = useState<string>(initialPreferredDriver);
   const [specialInstructions, setSpecialInstructions] = useState(
     'Senior passenger. Please assist from parking bay to reception desk.'
   );
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'guardian_pay' | 'cash' | 'upi'>('razorpay');
 
   const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [alternativeDrivers, setAlternativeDrivers] = useState<typeof drivers>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId) || vehicles[0];
 
@@ -88,81 +92,89 @@ function BookDriverContent() {
   const taxAmount = Math.round((baseFare + durationFare + platformFee) * 0.05); // 5% GST
   const totalFare = baseFare + durationFare + platformFee + taxAmount;
 
-  const handleSubmitBooking = (e: React.FormEvent) => {
+  const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setBookingError(null);
+    setAlternativeDrivers([]);
+
     if (!selectedVehicle) {
-      alert('Please register or select a vehicle first.');
+      setBookingError('Please register or select a vehicle first.');
       return;
     }
 
-    // Determine driver assignment
-    let assignedDriver = drivers.find((d) => d.id === selectedDriverId);
-    if (!assignedDriver || selectedDriverId === 'auto_match') {
-      // Pick best eligible match
-      const best = matchingResults.find((m) => m.isEligible);
-      assignedDriver = best ? best.driver : drivers[0];
+    // Check if explicitly selected driver is currently on an active ride
+    if (selectedDriverId !== 'auto_match') {
+      const targetDrv = drivers.find((d) => d.id === selectedDriverId);
+      if (targetDrv && (targetDrv.currentActiveBookingId || !targetDrv.isAvailable)) {
+        const availableAlts = matchingResults
+          .filter((m) => m.isEligible && m.driver.id !== targetDrv.id)
+          .map((m) => m.driver);
+        setBookingError('This driver is currently completing another ride.');
+        setAlternativeDrivers(availableAlts);
+        return;
+      }
     }
 
-    const booking = createBooking({
-      customerId: currentUser?.id || 'usr_guest',
-      customerName: currentUser?.name || 'Customer',
-      customerPhone: currentUser?.phone || '',
-      bookedByGuardianId: currentUser?.role === 'family_guardian' ? currentUser?.id : undefined,
-      bookedByGuardianName: currentUser?.role === 'family_guardian' ? currentUser?.name : undefined,
-      driverId: assignedDriver.id,
-      driverName: assignedDriver.name,
-      driverPhone: assignedDriver.phone,
-      driverRating: assignedDriver.rating,
-      driverPhotoUrl: assignedDriver.photoUrl,
-      vehicleId: selectedVehicle.id,
-      vehicleDetails: {
-        make: selectedVehicle.make,
-        model: selectedVehicle.model,
-        registrationNumber: selectedVehicle.registrationNumber,
-        transmission: selectedVehicle.transmission,
-        fuelType: selectedVehicle.fuelType,
-        isEv: selectedVehicle.isEv,
-      },
-      pickupAddress,
-      destinationAddress,
-      pickupLat: 12.9784,
-      pickupLng: 77.6408,
-      destLat: 12.9592,
-      destLng: 77.6534,
-      pickupDate,
-      pickupTime,
-      expectedDurationHours: durationHours,
-      isRecurring,
-      recurringTitle: isRecurring ? recurringTitle : undefined,
-      status: 'confirmed',
-      preferredDriverId: assignedDriver.id,
-      baseFare,
-      durationFare,
-      platformFee,
-      taxAmount,
-      totalFare,
-      paymentStatus: paymentMethod === 'cash' ? 'pending' : 'successful',
-      paymentMethod,
-      specialInstructions,
-    });
-
-    if (isRecurring) {
-      addRecurringSchedule({
+    setIsSubmitting(true);
+    try {
+      const result = await createBookingAsync({
         customerId: currentUser?.id || 'usr_guest',
-        title: recurringTitle,
+        customerName: currentUser?.name || 'Customer',
+        customerPhone: currentUser?.phone || '',
+        bookedByGuardianId: currentUser?.role === 'family_guardian' ? currentUser?.id : undefined,
+        bookedByGuardianName: currentUser?.role === 'family_guardian' ? currentUser?.name : undefined,
+        requestedDriverId: selectedDriverId,
         vehicleId: selectedVehicle.id,
-        preferredDriverId: assignedDriver.id,
-        daysOfWeek: recurringDays,
-        startDate: pickupDate,
-        pickupTime,
+        vehicleDetails: {
+          make: selectedVehicle.make,
+          model: selectedVehicle.model,
+          registrationNumber: selectedVehicle.registrationNumber,
+          transmission: selectedVehicle.transmission,
+          fuelType: selectedVehicle.fuelType,
+          isEv: selectedVehicle.isEv,
+        },
         pickupAddress,
         destinationAddress,
-        status: 'active',
-        totalOccurrences: 12,
+        pickupLat: 12.9784,
+        pickupLng: 77.6408,
+        destLat: 12.9592,
+        destLng: 77.6534,
+        pickupDate,
+        pickupTime,
+        expectedDurationHours: durationHours,
+        isRecurring,
+        recurringTitle: isRecurring ? recurringTitle : undefined,
+        paymentMethod,
+        specialInstructions,
       });
-    }
 
-    setBookingSuccess(booking.bookingCode);
+      if (!result.ok || !result.booking) {
+        setBookingError(result.error || 'Unable to complete booking.');
+        setAlternativeDrivers(result.alternativeDrivers || []);
+        return;
+      }
+
+      if (isRecurring) {
+        addRecurringSchedule({
+          customerId: currentUser?.id || 'usr_guest',
+          title: recurringTitle,
+          vehicleId: selectedVehicle.id,
+          preferredDriverId: result.booking.driverId,
+          daysOfWeek: recurringDays,
+          startDate: pickupDate,
+          pickupTime,
+          pickupAddress,
+          destinationAddress,
+          status: 'active',
+          totalOccurrences: 12,
+        });
+      }
+
+      setBookingSuccess(result.booking.bookingCode);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (bookingSuccess) {
@@ -411,19 +423,28 @@ function BookDriverContent() {
 
             {/* List of matched drivers */}
             <div className="space-y-3">
-              {matchingResults.slice(0, 3).map((res) => {
+              {matchingResults.map((res) => {
                 const isSelected = selectedDriverId === res.driver.id;
+                const isOnTrip = Boolean(res.driver.currentActiveBookingId);
                 return (
                   <div
                     key={res.driver.id}
                     onClick={() => {
-                      if (res.isEligible) {
+                      if (res.isEligible && !isOnTrip) {
                         setSelectedDriverId(res.driver.id);
+                        setBookingError(null);
+                      } else if (isOnTrip) {
+                        setBookingError('This driver is currently completing another ride.');
+                        setAlternativeDrivers(
+                          matchingResults
+                            .filter((m) => m.isEligible && !m.driver.currentActiveBookingId)
+                            .map((m) => m.driver)
+                        );
                       }
                     }}
                     className={`p-3.5 rounded-2xl border transition-all ${
-                      !res.isEligible
-                        ? 'opacity-50 border-slate-200 bg-slate-50 dark:bg-slate-800 cursor-not-allowed'
+                      !res.isEligible || isOnTrip
+                        ? 'opacity-65 border-slate-200 bg-slate-50 dark:bg-slate-800 cursor-not-allowed'
                         : isSelected
                         ? 'border-brand-teal bg-brand-teal/5 shadow-md ring-2 ring-brand-teal/20 cursor-pointer'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-400 bg-slate-50 dark:bg-slate-800/40 cursor-pointer'
@@ -546,12 +567,53 @@ function BookDriverContent() {
               </div>
             </div>
 
+            {/* Booking Conflict / Error Banner + Alternative Available Drivers */}
+            {bookingError && (
+              <div className="p-4 bg-rose-500/20 border border-rose-400 rounded-2xl text-xs text-rose-100 space-y-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-300 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-bold text-white">{bookingError}</strong>
+                    {alternativeDrivers.length > 0 && (
+                      <span className="text-rose-200">
+                        Select an available verified driver below to continue:
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {alternativeDrivers.length > 0 && (
+                  <div className="space-y-1.5">
+                    {alternativeDrivers.map((alt) => (
+                      <button
+                        key={alt.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDriverId(alt.id);
+                          setBookingError(null);
+                          setAlternativeDrivers([]);
+                        }}
+                        className="w-full p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl flex items-center justify-between text-left transition-colors"
+                      >
+                        <span className="font-bold text-white">
+                          {alt.name} ({alt.rating} ★)
+                        </span>
+                        <span className="text-[11px] font-bold text-brand-tealLight">
+                          Select Available →
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-4 bg-brand-teal hover:bg-brand-tealDark text-white font-black rounded-2xl text-base shadow-xl flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95"
+              disabled={isSubmitting}
+              className="w-full py-4 bg-brand-teal hover:bg-brand-tealDark disabled:opacity-60 text-white font-black rounded-2xl text-base shadow-xl flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95"
             >
-              <span>{t.confirmBookBtn}</span>
+              <span>{isSubmitting ? 'Confirming...' : t.confirmBookBtn}</span>
               <ArrowRight className="w-5 h-5" />
             </button>
 

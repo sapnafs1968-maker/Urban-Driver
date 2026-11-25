@@ -154,9 +154,11 @@ function CustomerVehiclesContent() {
                 }`}
             >
               {v.isDefault && (
-                <span className="absolute top-4 right-4 text-[10px] bg-brand-teal text-white font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  {t.defaultCarBadge}
-                </span>
+                <div className="mb-1">
+                  <span className="inline-block text-[10px] bg-brand-teal text-white font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    {t.defaultCarBadge}
+                  </span>
+                </div>
               )}
 
               <div className="flex items-center gap-3">
@@ -248,14 +250,14 @@ function CustomerVehiclesContent() {
 
       {/* Add / Edit Vehicle Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full shadow-2xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full max-h-[90dvh] overflow-y-auto shadow-2xl p-5 sm:p-6 space-y-4">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               {editingVehicle ? t.editVehicle : t.registerVehicleBtn}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                     {t.regNumberLabel}

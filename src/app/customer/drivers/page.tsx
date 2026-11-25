@@ -26,9 +26,11 @@ export default function CustomerDriversPage() {
   const [transmissionFilter, setTransmissionFilter] = useState<'all' | 'manual' | 'automatic'>('all');
   const [evOnly, setEvOnly] = useState(false);
   const [trustedOnly, setTrustedOnly] = useState(false);
+  const [directoryTab, setDirectoryTab] = useState<'verified' | 'all'>('verified');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredDrivers = drivers.filter((d) => {
+    if (directoryTab === 'verified' && d.verificationStatus !== 'verified') return false;
     if (trustedOnly && !trustedDriverIds.includes(d.id)) return false;
     if (evOnly && !d.capabilities.evCertified) return false;
     if (transmissionFilter === 'manual' && !d.capabilities.manualTransmission) return false;
@@ -78,6 +80,31 @@ export default function CustomerDriversPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
+          <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+            <button
+              type="button"
+              onClick={() => setDirectoryTab('verified')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors ${
+                directoryTab === 'verified'
+                  ? 'bg-white dark:bg-slate-900 text-brand-teal shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              Verified & Eligible ({drivers.filter((d) => d.verificationStatus === 'verified').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setDirectoryTab('all')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors ${
+                directoryTab === 'all'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              All Registered ({drivers.length})
+            </button>
+          </div>
+
           <label className="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
             <input
               type="checkbox"
@@ -200,12 +227,26 @@ export default function CustomerDriversPage() {
                   {t.details} →
                 </Link>
 
-                <Link
-                  href={`/customer/book?driverId=${driver.id}`}
-                  className="px-4 py-2 bg-brand-navy hover:bg-slate-800 dark:bg-brand-teal dark:hover:bg-brand-tealDark text-white text-xs font-bold rounded-xl shadow-sm transition-all"
-                >
-                  {t.bookDriverBtn}
-                </Link>
+                {!isVerified ? (
+                  <span className="px-3 py-1.5 bg-amber-100 text-amber-800 text-[11px] font-bold rounded-xl">
+                    Verification Pending
+                  </span>
+                ) : driver.currentActiveBookingId ? (
+                  <span className="px-3 py-1.5 bg-rose-100 text-rose-800 text-[11px] font-bold rounded-xl">
+                    Currently on a trip
+                  </span>
+                ) : !driver.isAvailable ? (
+                  <span className="px-3 py-1.5 bg-slate-200 text-slate-700 text-[11px] font-bold rounded-xl">
+                    Unavailable
+                  </span>
+                ) : (
+                  <Link
+                    href={`/customer/book?preferredDriverId=${driver.id}`}
+                    className="px-4 py-2 bg-brand-navy hover:bg-slate-800 dark:bg-brand-teal dark:hover:bg-brand-tealDark text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+                  >
+                    {t.bookDriverBtn}
+                  </Link>
+                )}
               </div>
             </div>
           );

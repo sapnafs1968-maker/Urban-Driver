@@ -1,8 +1,14 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AppProvider } from '@/lib/store';
 import { Navbar } from '@/components/layout/Navbar';
 import { DemoBar } from '@/components/layout/DemoBar';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   title: 'Urban Driver | Your Car. Your Trusted Driver. Your Family’s Peace of Mind.',

@@ -133,6 +133,20 @@ export interface DriverDocument {
   reviewedAt?: string;
 }
 
+export interface DriverVehicle {
+  id: string;
+  driverId: string;
+  registrationNumber: string;
+  manufacturer: string;
+  model: string;
+  year?: number;
+  category?: string;
+  transmission?: TransmissionType;
+  fuelType?: FuelType;
+  verificationStatus: 'pending' | 'verified' | 'rejected';
+  verifiedAt?: string;
+}
+
 export interface Driver {
   id: string;
   userId: string;
@@ -145,6 +159,8 @@ export interface Driver {
   rating: number;
   totalTrips: number;
   isAvailable: boolean;
+  currentActiveBookingId?: string | null;
+  registeredVehicle?: DriverVehicle;
   verificationStatus: VerificationStatus;
   verificationNotes?: string;
   verifiedAt?: string;
@@ -256,6 +272,9 @@ export interface Booking {
   driverPhone?: string;
   driverRating?: number;
   driverPhotoUrl?: string;
+  driverVehicle?: DriverVehicle;
+  tripId?: string;
+  payoutId?: string;
   vehicleId: string;
   vehicleDetails: {
     make: string;
@@ -407,6 +426,67 @@ export interface InstitutionalLead {
   notes: string;
   status: 'new' | 'contacted' | 'pilot_in_progress' | 'signed';
   createdAt: string;
+}
+
+export type PayoutStatus = 'Pending' | 'Processing' | 'Paid' | 'Failed';
+
+export interface Trip {
+  id: string;
+  bookingId: string;
+  bookingCode: string;
+  driverId: string;
+  customerId: string;
+  startTime: string;
+  completionTime?: string;
+  finalFare: number;
+  tripStatus: 'in_progress' | 'completed' | 'cancelled';
+}
+
+export interface DriverPayout {
+  id: string;
+  driverId: string;
+  tripId: string;
+  bookingId: string;
+  bookingCode: string;
+  customerId: string;
+  customerName: string;
+  pickupAddress: string;
+  destinationAddress: string;
+  tripDate: string;
+  tripTime: string;
+  totalFare: number;
+  platformCommission: number;
+  deductions: number;
+  netPayout: number;
+  payoutStatus: PayoutStatus;
+  paymentReference?: string;
+  createdAt: string;
+  paidAt?: string;
+}
+
+export interface TrustedDriver {
+  id: string;
+  customerId: string;
+  driverId: string;
+  completedTripsCount: number;
+  isPrimary: boolean;
+  isBackup: boolean;
+  trustedStatus: 'active' | 'removed';
+  addedAt: string;
+  lastTripAt?: string;
+}
+
+export interface SavedDestination {
+  id: string;
+  customerId: string;
+  name: string;
+  category: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  icon: string;
+  isDefault?: boolean;
+  createdAt?: string;
 }
 
 export interface AppNotification {

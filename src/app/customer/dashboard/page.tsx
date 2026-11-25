@@ -30,6 +30,7 @@ function CustomerDashboardContent() {
     language,
     vehicles,
     drivers,
+    trustedDrivers,
     trustedDriverIds,
     bookings,
     confirmArrival,
@@ -66,9 +67,9 @@ function CustomerDashboardContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* If Senior Citizen Mode is ON, render dedicated high-contrast accessibility interface */}
+      {/* If Senior Citizen Mode is ON, render dedicated high-contrast one-tap accessibility interface */}
       {seniorMode ? (
-        <SeniorModeContainer onQuickBook={handleQuickBook} />
+        <SeniorModeContainer />
       ) : (
         /* Standard Customer Dashboard (Light Theme) */
         <div className="space-y-8">

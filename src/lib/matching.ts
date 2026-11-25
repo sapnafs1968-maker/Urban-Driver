@@ -38,8 +38,10 @@ export function matchDriversForVehicle(
       score += 15;
     }
 
-    // 2. Availability
-    if (!driver.isAvailable) {
+    // 2. Availability & Active Ride Lock
+    if (driver.currentActiveBookingId) {
+      incompatibilityReasons.push('Driver is currently completing another ride');
+    } else if (!driver.isAvailable) {
       incompatibilityReasons.push('Driver currently offline / unavailable');
     } else {
       score += 10;

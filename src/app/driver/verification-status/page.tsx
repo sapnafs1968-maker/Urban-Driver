@@ -119,7 +119,7 @@ export default function VerificationStatusPage() {
 
         {/* 5-Step Progress Tracker */}
         <div className="pt-6 border-t border-slate-100 dark:border-slate-800 max-w-2xl mx-auto">
-          <div className="grid grid-cols-5 gap-2 text-center text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-2 text-center text-xs">
             {[
               { num: 1, title: 'Account Created' },
               { num: 2, title: 'Profile Completed' },

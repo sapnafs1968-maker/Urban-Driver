@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useApp } from '@/lib/store';
 import { getTranslation, formatBookingStatus, formatVerificationStatus } from '@/lib/i18n';
@@ -26,12 +26,21 @@ function DriverDashboardContent() {
     currentUser,
     drivers,
     bookings,
+    driverPayouts,
     updateBookingStatus,
     toggleDriverAvailability,
+    registerDriverVehicle,
     language,
   } = useApp();
 
   const t = getTranslation(language);
+
+  const [editingVehicle, setEditingVehicle] = useState(false);
+  const [vehReg, setVehReg] = useState('');
+  const [vehMake, setVehMake] = useState('');
+  const [vehModel, setVehModel] = useState('');
+  const [vehCategory, setVehCategory] = useState('Sedan');
+  const [vehSaving, setVehSaving] = useState(false);
 
   if (!currentUser) return null;
 
@@ -49,14 +58,33 @@ function DriverDashboardContent() {
         b.status === 'driver_assigned' ||
         b.status === 'driver_en_route' ||
         b.status === 'driver_arrived' ||
-        b.status === 'trip_started' ||
-        b.status === 'trip_completed' ||
-        b.status === 'arrival_confirmation_pending')
+        b.status === 'trip_started')
   );
 
-  const completedTrips = bookings.filter(
-    (b) => b.driverId === currentDriver.id && b.status === 'closed'
-  );
+  const myPayouts = driverPayouts.filter((p) => p.driverId === currentDriver.id);
+  const totalNetEarnings = myPayouts.reduce((sum, p) => sum + p.netPayout, 0);
+  const pendingPayoutAmount = myPayouts
+    .filter((p) => p.payoutStatus === 'Pending' || p.payoutStatus === 'Processing')
+    .reduce((sum, p) => sum + p.netPayout, 0);
+
+  const isOnActiveRide = Boolean(assignedBooking || currentDriver.currentActiveBookingId);
+
+  const handleSaveDriverVehicle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vehReg.trim() || !vehMake.trim() || !vehModel.trim()) return;
+    setVehSaving(true);
+    try {
+      await registerDriverVehicle(currentDriver.id, {
+        registrationNumber: vehReg.trim().toUpperCase(),
+        manufacturer: vehMake.trim(),
+        model: vehModel.trim(),
+        category: vehCategory,
+      });
+      setEditingVehicle(false);
+    } finally {
+      setVehSaving(false);
+    }
+  };
 
   const isVerified = currentDriver.verificationStatus === 'verified';
 
@@ -107,22 +135,38 @@ function DriverDashboardContent() {
         {/* Availability Toggle */}
         <div className="flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-end">
           <span className="text-xs font-semibold text-slate-600">
-            {t.status || 'Duty Status'}: {currentDriver.isAvailable && isVerified ? (t.statusStarted || 'ONLINE') : (t.statusClosed || 'OFFLINE')}
+            {t.status || 'Duty Status'}:{' '}
+            {isOnActiveRide
+              ? 'ON ACTIVE RIDE'
+              : currentDriver.isAvailable && isVerified
+              ? t.statusStarted || 'ONLINE'
+              : t.statusClosed || 'OFFLINE'}
           </span>
           <button
-            disabled={!isVerified}
+            disabled={!isVerified || isOnActiveRide}
             onClick={() => toggleDriverAvailability(currentDriver.id)}
-            title={!isVerified ? (t.verifUnderReview || 'Verification required to accept bookings') : undefined}
-            className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${currentDriver.isAvailable && isVerified
-              ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
-              }`}
+            title={
+              isOnActiveRide
+                ? 'Complete or cancel your active ride before changing availability'
+                : !isVerified
+                ? t.verifUnderReview || 'Verification required to accept bookings'
+                : undefined
+            }
+            className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+              isOnActiveRide
+                ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                : currentDriver.isAvailable && isVerified
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+            }`}
           >
-            {!isVerified
-              ? (t.verifPending || 'Verification Required')
+            {isOnActiveRide
+              ? 'Locked (Active Ride)'
+              : !isVerified
+              ? t.verifPending || 'Verification Required'
               : currentDriver.isAvailable
-                ? (t.close || 'Go Offline')
-                : (t.confirm || 'Go Online')}
+              ? t.close || 'Go Offline'
+              : t.confirm || 'Go Online'}
           </button>
         </div>
       </div>
@@ -217,6 +261,108 @@ function DriverDashboardContent() {
         </div>
       </div>
 
+      {/* MY REGISTERED DRIVER VEHICLE (DISTINCT FROM CUSTOMER VEHICLES) */}
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Car className="w-5 h-5 text-brand-teal" />
+            <div>
+              <h2 className="text-base font-black text-brand-navy">My Vehicle</h2>
+              <p className="text-[11px] text-slate-500">
+                Your own registered/assigned driver vehicle (never displays customer-owned cars).
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setVehReg(currentDriver.registeredVehicle?.registrationNumber || '');
+              setVehMake(currentDriver.registeredVehicle?.manufacturer || '');
+              setVehModel(currentDriver.registeredVehicle?.model || '');
+              setVehCategory(currentDriver.registeredVehicle?.category || 'Sedan');
+              setEditingVehicle(!editingVehicle);
+            }}
+            className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200"
+          >
+            {editingVehicle ? 'Cancel' : currentDriver.registeredVehicle ? 'Update Vehicle' : '+ Register My Vehicle'}
+          </button>
+        </div>
+
+        {editingVehicle ? (
+          <form onSubmit={handleSaveDriverVehicle} className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <input
+              type="text"
+              required
+              placeholder="Reg. No (e.g. KA 03 AB 7742)"
+              value={vehReg}
+              onChange={(e) => setVehReg(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase"
+            />
+            <input
+              type="text"
+              required
+              placeholder="Manufacturer (e.g. Maruti Suzuki)"
+              value={vehMake}
+              onChange={(e) => setVehMake(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+            />
+            <input
+              type="text"
+              required
+              placeholder="Model (e.g. Dzire VXi)"
+              value={vehModel}
+              onChange={(e) => setVehModel(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+            />
+            <button
+              type="submit"
+              disabled={vehSaving}
+              className="px-4 py-2 bg-brand-teal hover:bg-brand-tealDark text-white font-bold rounded-xl"
+            >
+              {vehSaving ? 'Saving...' : 'Save My Vehicle'}
+            </button>
+          </form>
+        ) : currentDriver.registeredVehicle ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Registration Number</span>
+              <div className="font-mono font-black text-slate-900 mt-0.5">
+                {currentDriver.registeredVehicle.registrationNumber}
+              </div>
+            </div>
+            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Manufacturer</span>
+              <div className="font-bold text-slate-900 mt-0.5">
+                {currentDriver.registeredVehicle.manufacturer}
+              </div>
+            </div>
+            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Model</span>
+              <div className="font-bold text-slate-900 mt-0.5">
+                {currentDriver.registeredVehicle.model}
+              </div>
+            </div>
+            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Verification Status</span>
+              <span
+                className={`inline-block mt-0.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                  currentDriver.registeredVehicle.verificationStatus === 'verified'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-amber-100 text-amber-800'
+                }`}
+              >
+                {currentDriver.registeredVehicle.verificationStatus}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-xs text-slate-500">
+            No personal driver vehicle registered yet. Click &quot;+ Register My Vehicle&quot; to add your own vehicle.
+          </div>
+        )}
+      </div>
+
       {/* ACTIVE ASSIGNED TRIP CONTROLLER */}
       {assignedBooking ? (
         <div className="bg-white border-2 border-brand-teal rounded-3xl p-6 shadow-md space-y-6">
@@ -234,10 +380,10 @@ function DriverDashboardContent() {
             </span>
           </div>
 
-          {/* Vehicle specifications to drive */}
+          {/* Customer vehicle assigned for this trip */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400">{t.myVehicles}</span>
+              <span className="text-[10px] uppercase font-bold text-brand-teal">Customer&apos;s Vehicle (To Drive)</span>
               <div className="text-sm font-black text-slate-900">
                 {assignedBooking.vehicleDetails.make} {assignedBooking.vehicleDetails.model}
               </div>
@@ -387,13 +533,16 @@ function DriverDashboardContent() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Earnings */}
         <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-sm space-y-2">
-          <span className="text-xs text-slate-400 font-bold uppercase">{t.weeklyEarnings || 'This Week’s Payout'}</span>
+          <span className="text-xs text-slate-400 font-bold uppercase">Net Earnings (Pending: ₹{pendingPayoutAmount.toFixed(0)})</span>
           <div className="text-3xl font-black text-brand-navy">
-            ₹6,450.00
+            ₹{totalNetEarnings.toFixed(2)}
           </div>
-          <div className="text-xs text-emerald-600 font-semibold">
-            {t.netPayout}
-          </div>
+          <Link
+            href="/driver/earnings"
+            className="text-xs text-brand-teal hover:underline font-bold block pt-1"
+          >
+            View Per-Trip Payouts →
+          </Link>
         </div>
 
         {/* Total Trips */}
@@ -403,7 +552,7 @@ function DriverDashboardContent() {
             {currentDriver.totalTrips}
           </div>
           <div className="text-xs text-slate-500">
-            {t.trustedDriversSub || 'Trusted Driver Circle in 18 Families'}
+            {myPayouts.length} Trip Payout Records Generated
           </div>
         </div>
 
@@ -420,6 +569,48 @@ function DriverDashboardContent() {
             {t.navDocuments} →
           </Link>
         </div>
+      </div>
+
+      {/* RECENT RIDE HISTORY & PER-TRIP PAYOUTS */}
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 className="text-base font-black text-brand-navy">Recent Ride History & Per-Trip Payouts</h3>
+          <Link href="/driver/earnings" className="text-xs text-brand-teal font-bold hover:underline">
+            Full Earnings Dashboard →
+          </Link>
+        </div>
+
+        {myPayouts.length === 0 ? (
+          <p className="text-xs text-slate-500 py-4">No completed trip payouts recorded yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {myPayouts.slice(0, 5).map((p) => (
+              <div key={p.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="space-y-1">
+                  <div className="font-bold text-slate-900">
+                    {p.bookingCode} • {p.customerName} <span className="text-slate-400 font-mono">({p.tripId})</span>
+                  </div>
+                  <div className="text-slate-500">
+                    {p.pickupAddress.split(',')[0]} → {p.destinationAddress.split(',')[0]} • {p.tripDate} {p.tripTime}
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <div className="text-[10px] text-slate-400">
+                      Fare ₹{p.totalFare} − Comm ₹{p.platformCommission} − Ded ₹{p.deductions}
+                    </div>
+                    <div className="text-sm font-black text-emerald-700">
+                      Net: ₹{p.netPayout.toFixed(2)}
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    {p.payoutStatus}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

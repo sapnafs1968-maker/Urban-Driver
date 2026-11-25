@@ -54,8 +54,8 @@ export const AssistedBookingModal: React.FC<AssistedBookingModalProps> = ({ isOp
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full max-h-[90dvh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95">
 
         {/* Header */}
         <div className="bg-brand-navy text-white p-5 flex items-center justify-between">

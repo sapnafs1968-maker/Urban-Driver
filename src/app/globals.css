@@ -100,23 +100,25 @@ body {
 
 /* Senior Citizen High Contrast Accessibility Mode */
 .senior-mode-active {
-  font-size: 1.25rem !important;
-  line-height: 1.65 !important;
+  font-size: clamp(1.05rem, 3.5vw, 1.25rem) !important;
+  line-height: 1.6 !important;
 }
 
 .senior-mode-active button,
 .senior-mode-active a {
-  min-height: 54px !important;
+  min-height: 48px !important;
 }
 
 .senior-mode-active h1 {
-  font-size: 2.5rem !important;
+  font-size: clamp(1.5rem, 5.5vw, 2.5rem) !important;
   font-weight: 900 !important;
+  line-height: 1.15 !important;
 }
 
 .senior-mode-active h2 {
-  font-size: 2rem !important;
+  font-size: clamp(1.25rem, 4.5vw, 2rem) !important;
   font-weight: 800 !important;
+  line-height: 1.2 !important;
 }
 
 .senior-mode-active h3 {

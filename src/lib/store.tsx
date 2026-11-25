@@ -16,6 +16,11 @@ import {
   BookingStatus,
   VerificationStatus,
   SupportTicketStatus,
+  DriverPayout,
+  DriverVehicle,
+  PayoutStatus,
+  SavedDestination,
+  TrustedDriver,
 } from '@/types';
 import {
   DEMO_ACCOUNTS,
@@ -29,6 +34,9 @@ import {
   INITIAL_INSTITUTIONAL_LEADS,
   INITIAL_NOTIFICATIONS,
   INITIAL_RECURRING_SCHEDULES,
+  INITIAL_DRIVER_PAYOUTS,
+  INITIAL_SAVED_DESTINATIONS,
+  INITIAL_TRUSTED_DRIVERS,
 } from './demo-data';
 import { LanguageCode } from './i18n';
 
@@ -84,11 +92,60 @@ interface AppContextType {
   checkDriverRedirect: (user: UserProfile) => string;
   toggleDriverAvailability: (driverId: string) => void;
   trustedDriverIds: string[];
+  trustedDrivers: TrustedDriver[];
   toggleTrustedDriver: (driverId: string) => void;
+  setTrustedDriverRole: (driverId: string, role: 'primary' | 'backup') => Promise<void>;
+  removeTrustedDriver: (driverId: string) => Promise<void>;
+  driverPayouts: DriverPayout[];
+  updatePayoutStatus: (
+    payoutId: string,
+    payoutStatus: PayoutStatus,
+    paymentReference?: string
+  ) => Promise<void>;
+  registerDriverVehicle: (
+    driverId: string,
+    vehicle: Omit<DriverVehicle, 'id' | 'driverId' | 'verificationStatus'>
+  ) => Promise<DriverVehicle | null>;
+  savedDestinations: SavedDestination[];
+  addSavedDestination: (
+    dest: Omit<SavedDestination, 'id' | 'customerId'>
+  ) => Promise<SavedDestination | null>;
+  refreshBackendData: () => Promise<void>;
   bookings: Booking[];
   createBooking: (
     newBooking: Omit<Booking, 'id' | 'bookingCode' | 'createdAt' | 'updatedAt' | 'statusHistory'>
   ) => Booking;
+  createBookingAsync: (payload: {
+    clientRequestId?: string;
+    customerId: string;
+    customerName: string;
+    customerPhone: string;
+    bookedByGuardianId?: string;
+    bookedByGuardianName?: string;
+    requestedDriverId?: string;
+    vehicleId: string;
+    vehicleDetails: Booking['vehicleDetails'];
+    pickupAddress: string;
+    destinationAddress: string;
+    pickupLat?: number;
+    pickupLng?: number;
+    destLat?: number;
+    destLng?: number;
+    pickupDate: string;
+    pickupTime: string;
+    expectedDurationHours: number;
+    isRecurring?: boolean;
+    recurringTitle?: string;
+    paymentMethod: Booking['paymentMethod'];
+    specialInstructions?: string;
+  }) => Promise<{
+    ok: boolean;
+    booking?: Booking;
+    driver?: Driver;
+    error?: string;
+    code?: string;
+    alternativeDrivers?: Driver[];
+  }>;
   updateBookingStatus: (bookingId: string, status: BookingStatus, note?: string) => void;
   confirmArrival: (bookingId: string) => void;
   triggerDelayException: (bookingId: string, reason?: string) => void;
@@ -140,7 +197,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [language, setLanguageState] = useState<LanguageCode>('en');
   const [vehicles, setVehicles] = useState<Vehicle[]>(INITIAL_VEHICLES);
   const [drivers, setDrivers] = useState<Driver[]>(INITIAL_DRIVERS);
-  const [trustedDriverIds, setTrustedDriverIds] = useState<string[]>(['drv_suresh']);
+  const [trustedDrivers, setTrustedDrivers] = useState<TrustedDriver[]>(INITIAL_TRUSTED_DRIVERS);
+  const [trustedDriverIds, setTrustedDriverIds] = useState<string[]>(['drv_suresh', 'drv_rajesh']);
+  const [driverPayouts, setDriverPayouts] = useState<DriverPayout[]>(INITIAL_DRIVER_PAYOUTS);
+  const [savedDestinations, setSavedDestinations] = useState<SavedDestination[]>(INITIAL_SAVED_DESTINATIONS);
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
   const [familyRelationships, setFamilyRelationships] = useState<FamilyRelationship[]>(
     INITIAL_FAMILY_RELATIONSHIPS
@@ -217,6 +277,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsAuthLoaded(true);
     }
   }, []);
+
+  // Sync live state from backend APIs
+  const refreshBackendData = async () => {
+    try {
+      const [drvRes, bkRes, payRes, tdRes, destRes] = await Promise.all([
+        fetch('/api/drivers'),
+        fetch('/api/bookings'),
+        fetch('/api/payouts'),
+        fetch('/api/trusted-drivers'),
+        fetch('/api/saved-destinations'),
+      ]);
+
+      if (drvRes.ok) {
+        const drvJson = await drvRes.json();
+        if (Array.isArray(drvJson.data)) setDrivers(drvJson.data);
+      }
+      if (bkRes.ok) {
+        const bkJson = await bkRes.json();
+        if (Array.isArray(bkJson.data)) setBookings(bkJson.data);
+      }
+      if (payRes.ok) {
+        const payJson = await payRes.json();
+        if (Array.isArray(payJson.data)) setDriverPayouts(payJson.data);
+      }
+      if (tdRes.ok) {
+        const tdJson = await tdRes.json();
+        if (Array.isArray(tdJson.data)) {
+          const list: TrustedDriver[] = tdJson.data.map((item: any) => ({
+            id: item.id,
+            customerId: item.customerId,
+            driverId: item.driverId,
+            completedTripsCount: item.completedTripsCount,
+            isPrimary: item.isPrimary,
+            isBackup: item.isBackup,
+            trustedStatus: item.trustedStatus,
+            addedAt: item.addedAt,
+            lastTripAt: item.lastTripAt,
+          }));
+          setTrustedDrivers(list);
+          const customerId = currentUser?.id;
+          const ids = list
+            .filter((td) => td.trustedStatus === 'active' && (!customerId || td.customerId === customerId))
+            .map((td) => td.driverId);
+          setTrustedDriverIds(ids);
+        }
+      }
+      if (destRes.ok) {
+        const destJson = await destRes.json();
+        if (Array.isArray(destJson.data)) setSavedDestinations(destJson.data);
+      }
+    } catch (err) {
+      console.warn('Backend sync skipped/offline:', err);
+    }
+  };
+
+  useEffect(() => {
+    refreshBackendData();
+    const interval = setInterval(refreshBackendData, 15000);
+    return () => clearInterval(interval);
+  }, [currentUser?.id]);
 
   // Save changes to LocalStorage
   const saveToLocal = (updatedData: Record<string, any>) => {
@@ -317,6 +437,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setDrivers(updated);
     saveToLocal({ drivers: updated });
+
+    const target = updated.find((d) => d.id === driverId || d.userId === driverId);
+    if (target) {
+      fetch('/api/drivers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId: target.id,
+          onboardingStatus: target.onboardingStatus,
+          verificationStatus: target.verificationStatus,
+          submittedAt: target.submittedAt,
+          onboardingStep: target.onboardingStep,
+          declarationAccepted: target.declarationAccepted,
+        }),
+      }).catch(() => {});
+    }
   };
 
   const checkDriverRedirect = (user: UserProfile): string => {
@@ -400,6 +536,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setDrivers(updatedList);
     saveToLocal({ drivers: updatedList });
+
+    // Persist driver registration/draft to backend directory
+    fetch('/api/drivers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(target),
+    }).catch(() => {});
+
     return target;
   };
 
@@ -419,6 +563,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setDrivers(updated);
     saveToLocal({ drivers: updated });
+
+    const target = updated.find((d) => d.id === driverId || d.userId === driverId);
+    if (target) {
+      fetch('/api/drivers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId: target.id,
+          onboardingStatus: target.onboardingStatus,
+          verificationStatus: target.verificationStatus,
+          submittedAt: target.submittedAt,
+          onboardingStep: target.onboardingStep,
+          declarationAccepted: target.declarationAccepted,
+        }),
+      }).catch(() => {});
+    }
   };
 
   const updateDriverCapabilities = (
@@ -440,6 +600,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setDrivers(updated);
     saveToLocal({ drivers: updated });
+
+    const target = updated.find((d) => d.id === driverId || d.userId === driverId);
+    if (target) {
+      fetch('/api/drivers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId: target.id,
+          onboardingStatus: target.onboardingStatus,
+          verificationStatus: target.verificationStatus,
+          submittedAt: target.submittedAt,
+          onboardingStep: target.onboardingStep,
+          declarationAccepted: target.declarationAccepted,
+        }),
+      }).catch(() => {});
+    }
   };
 
   const adminReviewDriver = (
@@ -454,6 +630,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return {
             ...d,
             verificationStatus: 'verified' as const,
+            isAvailable: true,
             verifiedAt: new Date().toISOString(),
             verificationNotes: notes || 'Verified and approved by Safety Admin.',
             rejectionReason: undefined,
@@ -463,6 +640,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return {
             ...d,
             verificationStatus: 'rejected' as const,
+            isAvailable: false,
             rejectionReason: reason || 'Application does not meet verification criteria.',
             verificationNotes: notes,
           };
@@ -479,6 +657,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setDrivers(updated);
     saveToLocal({ drivers: updated });
+
+    const reviewed = updated.find((d) => d.id === driverId);
+    if (reviewed) {
+      fetch('/api/drivers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId: reviewed.id,
+          verificationStatus: reviewed.verificationStatus,
+          isAvailable: reviewed.isAvailable,
+          verifiedAt: reviewed.verifiedAt,
+          verificationNotes: reviewed.verificationNotes,
+          rejectionReason: reviewed.rejectionReason,
+          changesRequestedNotes: reviewed.changesRequestedNotes,
+        }),
+      }).catch(() => {});
+    }
   };
 
   const adminApproveDemoDriver = (driverId: string, notes?: string) => {
@@ -487,6 +682,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return {
           ...d,
           verificationStatus: 'verified' as const,
+          isAvailable: true,
           adminDemoApproved: true,
           adminDemoApprovedAt: new Date().toISOString(),
           verificationNotes: notes || 'Approved in Demo Mode Sandbox (SIMULATED — NOT GOVERNMENT VERIFIED).',
@@ -499,6 +695,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setDrivers(updated);
     saveToLocal({ drivers: updated });
+
+    const reviewed = updated.find((d) => d.id === driverId);
+    if (reviewed) {
+      fetch('/api/drivers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId: reviewed.id,
+          verificationStatus: 'verified',
+          isAvailable: true,
+          adminDemoApproved: true,
+          adminDemoApprovedAt: reviewed.adminDemoApprovedAt,
+          verificationNotes: reviewed.verificationNotes,
+          isSimulatedVerification: true,
+        }),
+      }).catch(() => {});
+    }
   };
 
   const recordDriverLicenceVerification = (driverId: string, result: any) => {
@@ -524,21 +737,199 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setDrivers(updated);
     saveToLocal({ drivers: updated });
+
+    const target = updated.find((d) => d.id === driverId || d.userId === driverId);
+    if (target) {
+      fetch('/api/drivers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId: target.id,
+          verificationMode: target.verificationMode,
+          licenceVerificationStatus: target.licenceVerificationStatus,
+          licenceVerificationBadge: target.licenceVerificationBadge,
+          isSimulatedVerification: target.isSimulatedVerification,
+          licenceVerificationResult: target.licenceVerificationResult,
+          licenceVerifiedAt: target.licenceVerifiedAt,
+        }),
+      }).catch(() => {});
+    }
   };
 
   const toggleDriverAvailability = (driverId: string) => {
-    const updated = drivers.map((d) => (d.id === driverId ? { ...d, isAvailable: !d.isAvailable } : d));
+    const target = drivers.find((d) => d.id === driverId);
+    if (!target) return;
+    if (!target.isAvailable && target.currentActiveBookingId) return;
+
+    const nextAvailable = !target.isAvailable;
+    const updated = drivers.map((d) =>
+      d.id === driverId ? { ...d, isAvailable: nextAvailable } : d
+    );
     setDrivers(updated);
     saveToLocal({ drivers: updated });
+
+    fetch('/api/drivers', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driverId, isAvailable: nextAvailable }),
+    })
+      .then((res) => {
+        if (!res.ok) refreshBackendData();
+      })
+      .catch(() => {});
   };
 
   const toggleTrustedDriver = (driverId: string) => {
+    const customerId = currentUser?.id || 'usr_cust_ramesh';
+    const isCurrentlyTrusted = trustedDriverIds.includes(driverId);
+
     setTrustedDriverIds((prev) => {
-      const exists = prev.includes(driverId);
-      const updated = exists ? prev.filter((id) => id !== driverId) : [...prev, driverId];
+      const updated = isCurrentlyTrusted
+        ? prev.filter((id) => id !== driverId)
+        : [...prev, driverId];
       saveToLocal({ trustedDriverIds: updated });
       return updated;
     });
+
+    if (isCurrentlyTrusted) {
+      fetch(
+        `/api/trusted-drivers?customerId=${encodeURIComponent(customerId)}&driverId=${encodeURIComponent(driverId)}`,
+        { method: 'DELETE' }
+      )
+        .then(() => refreshBackendData())
+        .catch(() => {});
+    } else {
+      fetch('/api/trusted-drivers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, driverId }),
+      })
+        .then(() => refreshBackendData())
+        .catch(() => {});
+    }
+  };
+
+  const setTrustedDriverRole = async (driverId: string, role: 'primary' | 'backup') => {
+    const customerId = currentUser?.id || 'usr_cust_ramesh';
+    const res = await fetch('/api/trusted-drivers', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerId, driverId, role }),
+    });
+    if (res.ok) await refreshBackendData();
+  };
+
+  const removeTrustedDriver = async (driverId: string) => {
+    const customerId = currentUser?.id || 'usr_cust_ramesh';
+    const res = await fetch(
+      `/api/trusted-drivers?customerId=${encodeURIComponent(customerId)}&driverId=${encodeURIComponent(driverId)}`,
+      { method: 'DELETE' }
+    );
+    if (res.ok) await refreshBackendData();
+  };
+
+  const registerDriverVehicle = async (
+    driverId: string,
+    vehicle: Omit<DriverVehicle, 'id' | 'driverId' | 'verificationStatus'>
+  ): Promise<DriverVehicle | null> => {
+    const res = await fetch('/api/driver-vehicles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driverId, ...vehicle }),
+    });
+    const data = await res.json();
+    if (res.ok && data.vehicle) {
+      await refreshBackendData();
+      return data.vehicle;
+    }
+    return null;
+  };
+
+  const updatePayoutStatus = async (
+    payoutId: string,
+    payoutStatus: PayoutStatus,
+    paymentReference?: string
+  ) => {
+    const res = await fetch('/api/payouts', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payoutId, payoutStatus, paymentReference }),
+    });
+    if (res.ok) await refreshBackendData();
+  };
+
+  const addSavedDestination = async (
+    dest: Omit<SavedDestination, 'id' | 'customerId'>
+  ): Promise<SavedDestination | null> => {
+    const customerId = currentUser?.id || 'usr_cust_ramesh';
+    const res = await fetch('/api/saved-destinations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerId, ...dest }),
+    });
+    const json = await res.json();
+    if (res.ok && json.data) {
+      await refreshBackendData();
+      return json.data;
+    }
+    return null;
+  };
+
+  const createBookingAsync = async (payload: {
+    clientRequestId?: string;
+    customerId: string;
+    customerName: string;
+    customerPhone: string;
+    bookedByGuardianId?: string;
+    bookedByGuardianName?: string;
+    requestedDriverId?: string;
+    vehicleId: string;
+    vehicleDetails: Booking['vehicleDetails'];
+    pickupAddress: string;
+    destinationAddress: string;
+    pickupLat?: number;
+    pickupLng?: number;
+    destLat?: number;
+    destLng?: number;
+    pickupDate: string;
+    pickupTime: string;
+    expectedDurationHours: number;
+    isRecurring?: boolean;
+    recurringTitle?: string;
+    paymentMethod: Booking['paymentMethod'];
+    specialInstructions?: string;
+  }) => {
+    const res = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      await refreshBackendData();
+      return {
+        ok: false,
+        error: data.error || 'Unable to create booking.',
+        code: data.code,
+        alternativeDrivers: data.alternativeDrivers || [],
+      };
+    }
+
+    await refreshBackendData();
+    const booking: Booking = data.booking;
+    const notif: AppNotification = {
+      id: `notif_${Date.now()}`,
+      userId: booking.customerId,
+      bookingId: booking.id,
+      title: 'Booking Confirmed',
+      message: `Your booking ${booking.bookingCode} with ${booking.driverName} is confirmed.`,
+      type: 'trip_update',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+    setNotifications((prev) => [notif, ...prev]);
+
+    return { ok: true, booking, driver: data.driver };
   };
 
   const createBooking = (
@@ -628,6 +1019,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setBookings(updated);
     saveToLocal({ bookings: updated });
 
+    // Sync status transition atomically with backend (releases driver, creates payout & trusted circle entry)
+    fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status,
+        note: note || `Status updated to ${status.replace('_', ' ')}`,
+        actor: currentUser?.name || 'Customer',
+      }),
+    })
+      .then(() => refreshBackendData())
+      .catch(() => {});
+
     // Notify guardian if active
     const targetBooking = bookings.find((b) => b.id === bookingId);
     if (targetBooking?.bookedByGuardianId) {
@@ -676,6 +1080,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setBookings(updated);
     saveToLocal({ bookings: updated });
+
+    // Sync safe arrival confirmation with backend
+    fetch(`/api/bookings/${encodeURIComponent(bookingId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'closed',
+        note: 'Safe arrival verified by customer.',
+        actor: currentUser?.name || 'Customer',
+      }),
+    })
+      .then(() => refreshBackendData())
+      .catch(() => {});
 
     // Add safe arrival confirmation notification
     const b = bookings.find((x) => x.id === bookingId);
@@ -990,9 +1407,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         checkDriverRedirect,
         toggleDriverAvailability,
         trustedDriverIds,
+        trustedDrivers,
         toggleTrustedDriver,
+        setTrustedDriverRole,
+        removeTrustedDriver,
+        driverPayouts,
+        updatePayoutStatus,
+        registerDriverVehicle,
+        savedDestinations,
+        addSavedDestination,
+        refreshBackendData,
         bookings,
         createBooking,
+        createBookingAsync,
         updateBookingStatus,
         confirmArrival,
         triggerDelayException,

@@ -97,7 +97,7 @@ export const DemoBar: React.FC = () => {
       )}
 
       {/* Floating Interactive Demo Controller (Light Theme) */}
-      <div className="fixed bottom-3 right-3 z-40 max-w-sm sm:max-w-md bg-white/95 backdrop-blur-md border border-slate-200 text-slate-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-300">
+      <div className="fixed bottom-3 right-3 left-3 sm:left-auto z-40 sm:max-w-md max-h-[75dvh] overflow-y-auto bg-white/95 backdrop-blur-md border border-slate-200 text-slate-800 rounded-2xl shadow-xl transition-all duration-300">
         <div
           onClick={() => setIsOpen(!isOpen)}
           className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
