@@ -151,11 +151,8 @@ export const Navbar: React.FC = () => {
                   <Car className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-sm sm:text-lg font-black tracking-tight text-brand-navy flex items-center gap-1.5 truncate">
-                    <span className="truncate">URBAN DRIVER</span>
-                    <span className="hidden xs:inline-block sm:inline-block text-[10px] bg-brand-softBlue text-brand-teal font-bold px-2 py-0.5 rounded-full border border-brand-teal/20 tracking-wider shrink-0">
-                      {t.pilotTag || 'PILOT'}
-                    </span>
+                  <span className="text-sm sm:text-lg font-black tracking-tight text-brand-navy whitespace-nowrap">
+                    URBAN DRIVER
                   </span>
                   <span className="text-[11px] text-slate-500 font-medium hidden sm:inline-block truncate max-w-[220px]">
                     {t.tagline ? t.tagline.split('.')[0] : 'Your Car. Your Trusted Driver'}.
