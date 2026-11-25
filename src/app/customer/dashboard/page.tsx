@@ -8,6 +8,7 @@ import { getTranslation, formatBookingStatus } from '@/lib/i18n';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { SeniorModeContainer } from '@/components/senior/SeniorModeContainer';
 import { LiveTripMap } from '@/components/maps/LiveTripMap';
+import { InstantCategoryGrid } from '@/components/booking/InstantCategoryGrid';
 import {
   Car,
   Star,
@@ -192,6 +193,34 @@ function CustomerDashboardContent() {
               </div>
             </div>
           )}
+
+          {/* INSTANT DESTINATION SHORTCUTS */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-brand-navy">
+                  {t.whereToGo || 'Where would you like to travel today?'}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  Select a destination category to search nearby places and book an instant chauffeur for your car.
+                </p>
+              </div>
+              <Link
+                href="/customer/book?instant=1"
+                className="text-xs font-bold text-brand-teal hover:underline shrink-0"
+              >
+                Open Full Booking Form →
+              </Link>
+            </div>
+            <InstantCategoryGrid
+              language={language}
+              onSelectDestination={(dest) => {
+                router.push(
+                  `/customer/book?destination=${encodeURIComponent(dest.address)}&destLat=${dest.latitude}&destLng=${dest.longitude}&category=${encodeURIComponent(dest.category)}&instant=1`
+                );
+              }}
+            />
+          </div>
 
           {/* QUICK OVERVIEW TILES */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

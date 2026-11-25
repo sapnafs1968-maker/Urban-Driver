@@ -569,6 +569,59 @@ export interface Translations {
   ttsResume: string;
   ttsStop: string;
   ttsReadPage: string;
+  // Instant Booking & Senior Citizen Mode extended keys (optional so all locales stay compatible)
+  catHospital?: string;
+  catHospitalDesc?: string;
+  catClinic?: string;
+  catClinicDesc?: string;
+  catPharmacy?: string;
+  catPharmacyDesc?: string;
+  catMarket?: string;
+  catMarketDesc?: string;
+  catGrocery?: string;
+  catGroceryDesc?: string;
+  catBank?: string;
+  catBankDesc?: string;
+  catTemple?: string;
+  catTempleDesc?: string;
+  catRailway?: string;
+  catRailwayDesc?: string;
+  catAirport?: string;
+  catAirportDesc?: string;
+  catBus?: string;
+  catBusDesc?: string;
+  catFamily?: string;
+  catFamilyDesc?: string;
+  catOther?: string;
+  catOtherDesc?: string;
+  searchPlacePrompt?: string;
+  searchDestinationPlaceholder?: string;
+  searchBtn?: string;
+  enterManuallyBtn?: string;
+  locationSearchUnavailable?: string;
+  noSearchResults?: string;
+  manualDestinationLabel?: string;
+  useThisAddress?: string;
+  selectedDestinationLabel?: string;
+  confirmDestinationBtn?: string;
+  voiceListeningStatus?: string;
+  voiceProcessingStatus?: string;
+  voiceDetectedStatus?: string;
+  voiceNotUnderstood?: string;
+  voicePermissionDenied?: string;
+  retryBtn?: string;
+  bookingServiceUnavailable?: string;
+  stepDestinationLabel?: string;
+  stepPickupLabel?: string;
+  stepVehicleLabel?: string;
+  stepDriverLabel?: string;
+  stepFarePaymentLabel?: string;
+  confirmBookingBtn?: string;
+  liveRideStatusTitle?: string;
+  demoSandboxLabel?: string;
+  savedPlacesTitle?: string;
+  addPlaceBtn?: string;
+  setDefaultPickupBtn?: string;
 }
 
 export const en: Translations = {
@@ -1142,4 +1195,56 @@ export const en: Translations = {
   ttsResume: "Resume",
   ttsStop: "Stop",
   ttsReadPage: "Read Page Aloud",
+  catHospital: "Hospital",
+  catHospitalDesc: "Multi-specialty & emergency hospitals",
+  catClinic: "Doctor / Clinic",
+  catClinicDesc: "Consultations & medical clinics",
+  catPharmacy: "Pharmacy",
+  catPharmacyDesc: "Medical stores & 24x7 chemists",
+  catMarket: "Shopping / Market",
+  catMarketDesc: "Local markets & shopping centres",
+  catGrocery: "Grocery Store",
+  catGroceryDesc: "Supermarkets & daily essentials",
+  catBank: "Bank",
+  catBankDesc: "Bank branches & pension offices",
+  catTemple: "Temple / Worship",
+  catTempleDesc: "Temples, mosques, churches & shrines",
+  catRailway: "Railway Station",
+  catRailwayDesc: "Train stations & metro junctions",
+  catAirport: "Airport",
+  catAirportDesc: "Domestic & international terminals",
+  catBus: "Bus Station",
+  catBusDesc: "Intercity & local bus terminals",
+  catFamily: "Family / Friend's Home",
+  catFamilyDesc: "Visit relatives or close friends",
+  catOther: "Other Destination",
+  catOtherDesc: "Search or enter any custom address",
+  searchPlacePrompt: "Search for a nearby place or enter the exact address",
+  searchDestinationPlaceholder: "Search place name or area...",
+  searchBtn: "Search",
+  enterManuallyBtn: "Enter Manually",
+  locationSearchUnavailable: "Location search is temporarily unavailable. You can enter the address manually.",
+  noSearchResults: "No matching places found. Try another name or enter the address manually.",
+  manualDestinationLabel: "Enter Destination Address Manually",
+  useThisAddress: "Use This Address",
+  selectedDestinationLabel: "Selected Destination",
+  confirmDestinationBtn: "Confirm Destination →",
+  voiceListeningStatus: "Listening... Speak your destination clearly",
+  voiceProcessingStatus: "Processing your voice...",
+  voiceDetectedStatus: "Destination detected",
+  voiceNotUnderstood: "Could not understand clearly. Please try again or type below.",
+  voicePermissionDenied: "Microphone permission denied. You can type or tap a category below.",
+  retryBtn: "Retry",
+  bookingServiceUnavailable: "Unable to connect to our booking service. Please try again.",
+  stepDestinationLabel: "1. Where would you like to go?",
+  stepPickupLabel: "2. Confirm Pickup Location",
+  stepVehicleLabel: "3. Select Your Car",
+  stepDriverLabel: "4. Select Driver",
+  stepFarePaymentLabel: "5. Review Fare & Confirm",
+  confirmBookingBtn: "Confirm Booking",
+  liveRideStatusTitle: "Live Ride Status",
+  demoSandboxLabel: "DEMO SANDBOX — Simulated Data",
+  savedPlacesTitle: "Saved Locations",
+  addPlaceBtn: "Add Location",
+  setDefaultPickupBtn: "Default Pickup",
 };

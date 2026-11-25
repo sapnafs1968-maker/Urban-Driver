@@ -110,6 +110,11 @@ interface AppContextType {
   addSavedDestination: (
     dest: Omit<SavedDestination, 'id' | 'customerId'>
   ) => Promise<SavedDestination | null>;
+  updateSavedDestination: (
+    id: string,
+    updates: Partial<SavedDestination>
+  ) => Promise<SavedDestination | null>;
+  deleteSavedDestination: (id: string) => Promise<boolean>;
   refreshBackendData: () => Promise<void>;
   bookings: Booking[];
   createBooking: (
@@ -899,17 +904,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dest: Omit<SavedDestination, 'id' | 'customerId'>
   ): Promise<SavedDestination | null> => {
     const customerId = currentUser?.id || 'usr_cust_ramesh';
-    const res = await fetch('/api/saved-destinations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customerId, ...dest }),
-    });
-    const json = await res.json();
-    if (res.ok && json.data) {
-      await refreshBackendData();
-      return json.data;
+    try {
+      const res = await fetch('/api/saved-destinations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, ...dest }),
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        await refreshBackendData();
+        return json.data;
+      }
+    } catch (err) {
+      console.warn('Failed to add saved destination:', err);
     }
     return null;
+  };
+
+  const updateSavedDestination = async (
+    id: string,
+    updates: Partial<SavedDestination>
+  ): Promise<SavedDestination | null> => {
+    const customerId = currentUser?.id || 'usr_cust_ramesh';
+    try {
+      const res = await fetch('/api/saved-destinations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, customerId, ...updates }),
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        await refreshBackendData();
+        return json.data;
+      }
+    } catch (err) {
+      console.warn('Failed to update saved destination:', err);
+    }
+    return null;
+  };
+
+  const deleteSavedDestination = async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/saved-destinations?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        await refreshBackendData();
+        return true;
+      }
+    } catch (err) {
+      console.warn('Failed to delete saved destination:', err);
+    }
+    return false;
   };
 
   const createBookingAsync = async (payload: {
@@ -936,23 +982,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     paymentMethod: Booking['paymentMethod'];
     specialInstructions?: string;
   }) => {
-    const res = await fetch('/api/bookings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      await refreshBackendData();
+    let res: Response;
+    try {
+      res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error('[createBookingAsync] Network error:', err);
       return {
         ok: false,
-        error: data.error || 'Unable to create booking.',
-        code: data.code,
-        alternativeDrivers: data.alternativeDrivers || [],
+        code: 'NETWORK_ERROR',
+        error: 'Unable to connect to our booking service. Please check your connection and try again.',
+        alternativeDrivers: [],
       };
     }
 
-    await refreshBackendData();
+    let data: any = null;
+    try {
+      data = await res.json();
+    } catch {
+      return {
+        ok: false,
+        code: 'SERVER_ERROR',
+        error: 'Our booking service is temporarily unavailable. Please try again in a moment.',
+        alternativeDrivers: [],
+      };
+    }
+
+    if (!res.ok) {
+      try {
+        await refreshBackendData();
+      } catch {
+        // Ignore background sync failure
+      }
+      return {
+        ok: false,
+        error: data?.error || 'Unable to create booking.',
+        code: data?.code,
+        alternativeDrivers: data?.alternativeDrivers || [],
+      };
+    }
+
+    try {
+      await refreshBackendData();
+    } catch {
+      // Booking already succeeded; avoid failing UI if background sync hiccups
+    }
     const booking: Booking = data.booking;
     const notif: AppNotification = {
       id: `notif_${Date.now()}`,
@@ -1453,6 +1530,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         registerDriverVehicle,
         savedDestinations,
         addSavedDestination,
+        updateSavedDestination,
+        deleteSavedDestination,
         refreshBackendData,
         bookings,
         createBooking,

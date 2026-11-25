@@ -46,16 +46,26 @@ function BookDriverContent() {
 
   // Address inputs
   const initialDest = searchParams.get('destination') || 'Manipal Hospital, Old Airport Road, Kodihalli';
+  const isInstantMode = searchParams.get('instant') === '1';
   const [pickupAddress, setPickupAddress] = useState('142, 6th Main, Defence Colony, Indiranagar, Bengaluru');
   const [destinationAddress, setDestinationAddress] = useState(initialDest);
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number }>({
+    lat: 12.9784,
+    lng: 77.6408,
+  });
+  const [destCoords, setDestCoords] = useState<{ lat: number; lng: number }>({
+    lat: Number(searchParams.get('destLat')) || 12.9592,
+    lng: Number(searchParams.get('destLng')) || 77.6534,
+  });
 
   // Date and Time
+  const todayStr = new Date().toISOString().split('T')[0];
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-  const [pickupDate, setPickupDate] = useState(tomorrowStr);
-  const [pickupTime, setPickupTime] = useState('10:00 AM');
+  const [pickupDate, setPickupDate] = useState(isInstantMode ? todayStr : tomorrowStr);
+  const [pickupTime, setPickupTime] = useState(isInstantMode ? 'Now (Instant Ride)' : '10:00 AM');
   const [durationHours, setDurationHours] = useState(3.5);
 
   // Booking type: one-time vs recurring
@@ -72,9 +82,11 @@ function BookDriverContent() {
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'guardian_pay' | 'cash' | 'upi'>('razorpay');
 
   const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [alternativeDrivers, setAlternativeDrivers] = useState<typeof drivers>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [requestNonce] = useState<number>(() => Date.now());
 
   const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId) || vehicles[0];
 
@@ -117,8 +129,26 @@ function BookDriverContent() {
     }
 
     setIsSubmitting(true);
+    const clientRequestId = `book_${currentUser?.id || 'guest'}_${requestNonce}`;
     try {
+      if (paymentMethod !== 'cash') {
+        const payRes = await fetch('/api/payment/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            booking_id: clientRequestId,
+            amount: totalFare,
+            method: paymentMethod,
+          }),
+        });
+        if (!payRes.ok) {
+          setBookingError('Payment verification is temporarily unavailable. Please retry or choose Cash.');
+          return;
+        }
+      }
+
       const result = await createBookingAsync({
+        clientRequestId,
         customerId: currentUser?.id || 'usr_guest',
         customerName: currentUser?.name || 'Customer',
         customerPhone: currentUser?.phone || '',
@@ -136,10 +166,10 @@ function BookDriverContent() {
         },
         pickupAddress,
         destinationAddress,
-        pickupLat: 12.9784,
-        pickupLng: 77.6408,
-        destLat: 12.9592,
-        destLng: 77.6534,
+        pickupLat: pickupCoords.lat,
+        pickupLng: pickupCoords.lng,
+        destLat: destCoords.lat,
+        destLng: destCoords.lng,
         pickupDate,
         pickupTime,
         expectedDurationHours: durationHours,
@@ -172,6 +202,9 @@ function BookDriverContent() {
       }
 
       setBookingSuccess(result.booking.bookingCode);
+      setCreatedBookingId(result.booking.id);
+    } catch {
+      setBookingError('Unable to connect to our booking service. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -190,7 +223,15 @@ function BookDriverContent() {
           {t.bookingCodeIs} <strong className="text-brand-teal font-mono">{bookingSuccess}</strong>.
         </p>
 
-        <div className="flex justify-center gap-4 pt-4">
+        <div className="flex flex-wrap justify-center gap-4 pt-4">
+          {createdBookingId && (
+            <button
+              onClick={() => router.push(`/customer/bookings/${createdBookingId}`)}
+              className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl text-sm shadow hover:bg-emerald-700 transition-all"
+            >
+              {t.liveRideStatusTitle || 'View Live Ride Status'} →
+            </button>
+          )}
           <button
             onClick={() => router.push('/customer/dashboard')}
             className="px-6 py-3 bg-brand-teal text-white font-bold rounded-xl text-sm shadow hover:bg-brand-tealDark transition-all"
