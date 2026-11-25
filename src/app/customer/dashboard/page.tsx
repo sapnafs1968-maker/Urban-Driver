@@ -66,7 +66,7 @@ function CustomerDashboardContent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div data-read-aloud className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* If Senior Citizen Mode is ON, render dedicated high-contrast one-tap accessibility interface */}
       {seniorMode ? (
         <SeniorModeContainer />

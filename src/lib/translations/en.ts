@@ -558,6 +558,17 @@ export interface Translations {
   workflowAccelerators: string;
   yearLabel: string;
   zeroAutoAccessNotice: string;
+  ttsReady: string;
+  ttsReading: string;
+  ttsPaused: string;
+  ttsFinished: string;
+  ttsVoiceUnavailable: string;
+  ttsUnsupported: string;
+  ttsError: string;
+  ttsPause: string;
+  ttsResume: string;
+  ttsStop: string;
+  ttsReadPage: string;
 }
 
 export const en: Translations = {
@@ -1120,4 +1131,15 @@ export const en: Translations = {
   workflowAccelerators: "Workflow Accelerators",
   yearLabel: "Year of Manufacture",
   zeroAutoAccessNotice: "Zero Automatic Access Guarantee: Access is granted solely with explicit senior consent.",
+  ttsReady: "Ready to read",
+  ttsReading: "Reading",
+  ttsPaused: "Paused",
+  ttsFinished: "Finished",
+  ttsVoiceUnavailable: "Voice unavailable for this language on this device",
+  ttsUnsupported: "Read Aloud is not supported in this browser",
+  ttsError: "Unable to read this content",
+  ttsPause: "Pause",
+  ttsResume: "Resume",
+  ttsStop: "Stop",
+  ttsReadPage: "Read Page Aloud",
 };

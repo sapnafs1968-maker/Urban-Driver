@@ -3,6 +3,7 @@ import './globals.css';
 import { AppProvider } from '@/lib/store';
 import { Navbar } from '@/components/layout/Navbar';
 import { DemoBar } from '@/components/layout/DemoBar';
+import { SeniorAccessibilityBar } from '@/components/senior/SeniorAccessibilityBar';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -35,6 +36,7 @@ export default function RootLayout({
         <AppProvider>
           <div className="min-h-screen flex flex-col">
             <Navbar />
+            <SeniorAccessibilityBar />
             <main className="flex-1 pb-16">{children}</main>
             <DemoBar />
           </div>

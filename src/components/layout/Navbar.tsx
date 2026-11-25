@@ -8,6 +8,7 @@ import { getTranslation } from '@/lib/i18n';
 import { speakText } from '@/lib/voice';
 import { LanguageSelector } from './LanguageSelector';
 import { LogoutConfirmModal } from '@/components/auth/LogoutConfirmModal';
+import { ReadAloudControls } from '@/components/accessibility/ReadAloudControls';
 import {
   Car,
   HeartHandshake,
@@ -209,15 +210,10 @@ export const Navbar: React.FC = () => {
 
               {currentUser ? (
                 <>
-                  {/* Read Aloud (Tablet & Desktop) */}
-                  <button
-                    type="button"
-                    onClick={handleReadAloud}
-                    className="hidden md:inline-flex p-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-brand-navy rounded-full border border-slate-200 transition-all active:scale-95"
-                    title={t.readAloud || 'Read Screen Aloud'}
-                  >
-                    <Volume2 className="w-4 h-4 text-brand-teal" />
-                  </button>
+                  {/* Read Screen Aloud Controls (Tablet & Desktop) */}
+                  <div className="hidden md:block">
+                    <ReadAloudControls variant="compact" />
+                  </div>
 
                   {/* Notifications */}
                   <div className="relative" ref={notifRef}>
@@ -454,16 +450,7 @@ export const Navbar: React.FC = () => {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <LanguageSelector variant="compact" />
 
-                {currentUser && (
-                  <button
-                    type="button"
-                    onClick={handleReadAloud}
-                    className="min-h-[40px] px-3 py-1.5 bg-white text-slate-800 rounded-full border border-slate-200 text-xs font-bold flex items-center gap-1.5 active:scale-95"
-                  >
-                    <Volume2 className="w-3.5 h-3.5 text-brand-teal" />
-                    <span>{t.readAloud || 'Read Aloud'}</span>
-                  </button>
-                )}
+                {currentUser && <ReadAloudControls variant="compact" />}
               </div>
 
               {currentUser && currentUser.role === 'customer' && (

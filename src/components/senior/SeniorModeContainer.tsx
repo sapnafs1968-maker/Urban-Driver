@@ -5,6 +5,7 @@ import { useApp } from '@/lib/store';
 import { translations } from '@/lib/i18n';
 import { speakText, startListening } from '@/lib/voice';
 import { LanguageSelector } from '@/components/layout/LanguageSelector';
+import { ReadAloudControls } from '@/components/accessibility/ReadAloudControls';
 import { Booking, SavedDestination } from '@/types';
 import {
   PhoneCall,
@@ -271,7 +272,10 @@ export const SeniorModeContainer: React.FC<SeniorModeContainerProps> = () => {
   };
 
   return (
-    <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-xl space-y-8">
+    <div
+      data-read-aloud
+      className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-xl space-y-8"
+    >
       {/* Top Senior Banner */}
       <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800">
         <div className="flex items-center gap-4">
@@ -296,13 +300,7 @@ export const SeniorModeContainer: React.FC<SeniorModeContainerProps> = () => {
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <LanguageSelector variant="prominent" />
 
-          <button
-            onClick={handleReadScreen}
-            className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-full text-sm font-bold flex items-center justify-center gap-2 border border-slate-700 shadow-sm transition-all"
-          >
-            <Volume2 className="w-4 h-4 text-brand-tealLight" />
-            <span>{t.readAloud}</span>
-          </button>
+          <ReadAloudControls variant="compact" />
 
           <a
             href="tel:18005550199"

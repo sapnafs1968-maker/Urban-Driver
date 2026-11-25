@@ -251,6 +251,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        if (typeof parsed.seniorMode === 'boolean') {
+          setSeniorMode(parsed.seniorMode);
+        } else if (savedUser) {
+          const u = JSON.parse(savedUser) as UserProfile;
+          if (parsed.seniorModePrefs && typeof parsed.seniorModePrefs[u.id] === 'boolean') {
+            setSeniorMode(parsed.seniorModePrefs[u.id]);
+          }
+        }
         if (parsed.vehicles) setVehicles(parsed.vehicles);
         if (parsed.drivers) setDrivers(parsed.drivers);
         if (parsed.bookings) setBookings(parsed.bookings);
@@ -350,14 +358,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const login = (user: UserProfile) => {
-    setCurrentUser(user);
+    // Check if user has a persisted seniorMode preference from prior sessions
+    let resolvedSeniorMode = user.seniorModeEnabled ?? false;
     try {
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+      const current = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const parsed = current ? JSON.parse(current) : {};
+      if (parsed.seniorModePrefs && typeof parsed.seniorModePrefs[user.id] === 'boolean') {
+        resolvedSeniorMode = parsed.seniorModePrefs[user.id];
+      }
+    } catch {}
+
+    const syncedUser = { ...user, seniorModeEnabled: resolvedSeniorMode };
+    setCurrentUser(syncedUser);
+    setSeniorMode(resolvedSeniorMode);
+
+    try {
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(syncedUser));
+      saveToLocal({ seniorMode: resolvedSeniorMode });
     } catch (e) {
       console.warn('Error saving user session:', e);
-    }
-    if (user.seniorModeEnabled !== undefined) {
-      setSeniorMode(user.seniorModeEnabled);
     }
   };
 
@@ -392,8 +411,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const persistSeniorMode = (next: boolean) => {
+    setSeniorMode(next);
+    try {
+      const current = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const parsed = current ? JSON.parse(current) : {};
+      const prefs = { ...(parsed.seniorModePrefs || {}) };
+      if (currentUser?.id) {
+        prefs[currentUser.id] = next;
+        const updatedUser = { ...currentUser, seniorModeEnabled: next };
+        setCurrentUser(updatedUser);
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedUser));
+      }
+      saveToLocal({ seniorMode: next, seniorModePrefs: prefs });
+    } catch (e) {
+      console.warn('Error persisting senior mode:', e);
+    }
+  };
+
   const toggleSeniorMode = () => {
-    setSeniorMode((prev) => !prev);
+    persistSeniorMode(!seniorMode);
   };
 
   const addVehicle = (vehicleData: Omit<Vehicle, 'id'>): Vehicle => {

@@ -121,6 +121,22 @@ body {
   line-height: 1.2 !important;
 }
 
+.senior-mode-active input,
+.senior-mode-active select,
+.senior-mode-active textarea {
+  font-size: 1.125rem !important;
+  min-height: 48px !important;
+  border-width: 2px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .senior-mode-active h3 {
   font-size: 1.65rem !important;
   font-weight: 800 !important;
