@@ -43,23 +43,23 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         aria-haspopup="true"
         aria-expanded={isOpen}
-        className={`inline-flex items-center gap-2 rounded-full font-medium transition-all duration-200 outline-none focus:ring-2 focus:ring-brand-teal/40 ${
+        className={`inline-flex items-center gap-1.5 rounded-full font-semibold transition-all duration-200 outline-none focus:ring-2 focus:ring-brand-teal/40 active:scale-95 ${
           variant === 'prominent'
-            ? 'px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm border border-slate-200 dark:border-slate-700 text-sm hover:border-brand-teal'
+            ? 'px-4 py-2.5 bg-white text-slate-800 shadow-sm border border-slate-200 text-sm hover:border-brand-teal'
             : variant === 'compact'
-            ? 'px-2.5 py-1.5 bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs border border-slate-700/80'
-            : 'px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700/80 text-xs backdrop-blur-md'
+            ? 'px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs border border-slate-200'
+            : 'px-3 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-800 border border-slate-200 text-xs'
         }`}
       >
         <Globe className="w-3.5 h-3.5 text-brand-teal shrink-0" />
-        <span className="font-semibold tracking-wide">
+        <span className="font-bold tracking-wide whitespace-nowrap">
           {activeLang.nativeName}
         </span>
-        <span className="text-[11px] opacity-60 hidden sm:inline">
+        <span className="text-[11px] text-slate-500 hidden xl:inline whitespace-nowrap">
           ({activeLang.englishName})
         </span>
         <ChevronDown
-          className={`w-3.5 h-3.5 opacity-60 transition-transform duration-200 ${
+          className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 shrink-0 ${
             isOpen ? 'rotate-180' : ''
           }`}
         />

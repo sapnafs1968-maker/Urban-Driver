@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useApp } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { speakText } from '@/lib/voice';
@@ -21,13 +21,29 @@ import {
   Settings,
   HelpCircle,
   ChevronDown,
-  Sparkles,
   ArrowRight,
+  Home,
+  CalendarCheck,
+  Star,
+  LayoutDashboard,
+  Users,
+  DollarSign,
+  FileText,
+  Sliders,
+  BarChart3,
+  Tag,
+  Compass,
 } from 'lucide-react';
+
+interface NavLinkItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  isPrimary?: boolean;
+}
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
-  const router = useRouter();
   const {
     currentUser,
     seniorMode,
@@ -48,7 +64,6 @@ export const Navbar: React.FC = () => {
   const t = getTranslation(language);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
@@ -62,7 +77,6 @@ export const Navbar: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
     setProfileDropdownOpen(false);
@@ -70,62 +84,61 @@ export const Navbar: React.FC = () => {
   }, [pathname]);
 
   const handleReadAloud = () => {
-    const text = `${t.appName || 'Urban Driver'}. ${t.tagline || 'Your Car. Your Trusted Driver. Your Family’s Peace of Mind.'}. ${currentUser ? currentUser.name : 'Welcome to Urban Driver'
-      }. ${seniorMode ? t.seniorModeOn : t.seniorModeOff}.`;
+    const text = `${t.appName || 'Urban Driver'}. Your car. Your trusted drive. ${
+      currentUser ? currentUser.name : 'Welcome to Urban Driver'
+    }. ${seniorMode ? t.seniorModeOn : t.seniorModeOff}.`;
     speakText(text, language);
   };
 
-  // Authenticated Role-Specific Nav Links
-  const getAuthenticatedNavLinks = () => {
+  const getAuthenticatedNavLinks = (): NavLinkItem[] => {
     if (!currentUser) return [];
 
     if (currentUser.role === 'admin') {
       return [
-        { href: '/admin/dashboard', label: t.navOverview || 'Overview' },
-        { href: '/admin/verification', label: t.navVerification || 'Driver Verification' },
-        { href: '/admin/bookings', label: t.myBookings || 'Bookings & Trips' },
-        { href: '/admin/pricing', label: t.navPricing || 'Pricing' },
-        { href: '/admin/analytics', label: t.navAnalytics || 'Pilot Analytics' },
-        { href: '/admin/support', label: t.support || 'Support' },
+        { href: '/admin/dashboard', label: t.navOverview || 'Dashboard', icon: LayoutDashboard },
+        { href: '/admin/verification', label: t.navVerification || 'Verification', icon: ShieldCheck },
+        { href: '/admin/bookings', label: t.myBookings || 'Bookings', icon: CalendarCheck },
+        { href: '/admin/pricing', label: t.navPricing || 'Pricing', icon: Tag },
+        { href: '/admin/analytics', label: t.navAnalytics || 'Analytics', icon: BarChart3 },
+        { href: '/admin/support', label: t.support || 'Support', icon: HelpCircle },
       ];
     }
     if (currentUser.role === 'driver') {
       return [
-        { href: '/driver/dashboard', label: t.navDriverHub || 'Driver Hub' },
-        { href: '/driver/trips', label: t.navAssignedTrips || 'Assigned Trips' },
-        { href: '/driver/capabilities', label: t.navCapabilities || 'Capabilities' },
-        { href: '/driver/documents', label: t.navDocuments || 'My Documents' },
-        { href: '/driver/earnings', label: t.navEarnings || 'Earnings' },
+        { href: '/driver/dashboard', label: t.navDriverHub || 'Dashboard', icon: LayoutDashboard },
+        { href: '/driver/trips', label: t.navAssignedTrips || 'My Trips', icon: Compass },
+        { href: '/driver/capabilities', label: t.navCapabilities || 'Capabilities', icon: Sliders },
+        { href: '/driver/documents', label: t.navDocuments || 'Documents', icon: FileText },
+        { href: '/driver/earnings', label: t.navEarnings || 'Earnings', icon: DollarSign },
       ];
     }
     if (currentUser.role === 'family_guardian') {
       return [
-        { href: '/family/dashboard', label: t.familyGuardian || 'Guardian Hub' },
-        { href: '/family/book', label: t.bookDriver || 'Book for Parent' },
-        { href: '/family/trips', label: t.myBookings || 'Live Trips' },
-        { href: '/family/members', label: t.details || 'Permissions' },
-        { href: '/family/support', label: t.support || 'Support' },
+        { href: '/family/dashboard', label: t.familyGuardian || 'Dashboard', icon: LayoutDashboard },
+        { href: '/family/book', label: t.bookDriver || 'Book a Ride', icon: Car, isPrimary: true },
+        { href: '/family/trips', label: t.myBookings || 'Live Trips', icon: CalendarCheck },
+        { href: '/family/members', label: t.details || 'Permissions', icon: Users },
+        { href: '/family/support', label: t.support || 'Support', icon: HelpCircle },
       ];
     }
-    // Default Customer Links
+    // Customer / Senior Citizen
     return [
-      { href: '/customer/dashboard', label: seniorMode ? t.navHome || 'Home' : t.navDashboard || 'Dashboard' },
-      { href: '/customer/book', label: t.bookDriver || 'Book Driver' },
-      { href: '/customer/vehicles', label: t.myVehicles || 'My Vehicles' },
-      { href: '/customer/drivers', label: t.findDrivers || 'Find Drivers' },
-      { href: '/customer/trusted-drivers', label: t.trustedDrivers || 'Trusted Circle' },
-      { href: '/customer/family', label: t.familyGuardian || 'Family Guardian' },
+      { href: '/customer/dashboard', label: seniorMode ? t.navHome || 'Home' : t.navDashboard || 'Dashboard', icon: Home },
+      { href: '/customer/book', label: t.bookDriver || 'Book a Ride', icon: Car, isPrimary: true },
+      { href: '/customer/bookings', label: t.myBookings || 'My Bookings', icon: CalendarCheck },
+      { href: '/customer/vehicles', label: t.myVehicles || 'My Vehicles', icon: Sliders },
+      { href: '/customer/drivers', label: t.findDrivers || 'Find Drivers', icon: Users },
+      { href: '/customer/trusted-drivers', label: t.trustedDrivers || 'Trusted Driver Circle', icon: Star },
+      { href: '/customer/family', label: t.familyGuardian || 'Family Guardian', icon: ShieldCheck },
     ];
   };
 
-  // Public Visitor Nav Links (Logged Out)
-  const publicNavLinks = [
-    { href: '/', label: t.navHome || 'Home' },
-    { href: '/#how-it-works', label: t.navHowItWorks || 'How It Works' },
-    { href: '/#for-customers', label: t.navForCustomers || 'For Customers' },
-    { href: '/#for-drivers', label: t.navForDrivers || 'For Drivers' },
-    { href: '/#safety', label: t.navSafety || 'Safety & Trust' },
-    { href: '/#about', label: t.navAbout || 'About Us' },
+  const publicNavLinks: NavLinkItem[] = [
+    { href: '/', label: t.navHome || 'Home', icon: Home },
+    { href: '/#how-it-works', label: t.navHowItWorks || 'How It Works', icon: Compass },
+    { href: '/#for-customers', label: t.navForCustomers || 'For Customers', icon: Car },
+    { href: '/#for-drivers', label: t.navForDrivers || 'For Drivers', icon: ShieldCheck },
+    { href: '/#safety', label: t.navSafety || 'Safety & Trust', icon: Star },
   ];
 
   const navLinks = currentUser ? getAuthenticatedNavLinks() : publicNavLinks;
@@ -141,97 +154,87 @@ export const Navbar: React.FC = () => {
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-xs transition-all">
+        {/* TOP ROW: Brand (Left) + Dedicated Utility & Account Cluster (Right) */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-3 lg:gap-4 h-16 sm:h-20">
+          <div className="flex items-center justify-between gap-3 h-16 sm:h-[70px]">
+            {/* Brand Logo & Motto */}
+            <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-2xl bg-gradient-to-tr from-brand-tealDark to-brand-teal flex items-center justify-center text-white shadow-md shadow-brand-teal/20 group-hover:scale-[1.03] transition-transform">
+                <Car className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm sm:text-lg font-black tracking-tight text-brand-navy whitespace-nowrap leading-tight">
+                  URBAN DRIVER
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium hidden sm:block whitespace-nowrap">
+                  Your car. Your trusted drive
+                </span>
+              </div>
+            </Link>
 
-            {/* Left: Brand Logo & Typography */}
-            <div className="flex items-center gap-2 shrink-0">
-              <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-2xl bg-gradient-to-tr from-brand-tealDark to-brand-teal flex items-center justify-center text-white shadow-md shadow-brand-teal/20 group-hover:scale-[1.03] transition-transform">
-                  <Car className="w-5 h-5" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm sm:text-lg font-black tracking-tight text-brand-navy whitespace-nowrap leading-tight">
-                    URBAN DRIVER
-                  </span>
-                  <span className="text-[11px] text-slate-500 font-medium hidden sm:block whitespace-nowrap">
-                    Your car. Your trusted drive
-                  </span>
-                </div>
-              </Link>
-            </div>
-
-            {/* Centre: Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 text-xs font-semibold min-w-0">
-              {navLinks.map((link) => {
-                const isActive = pathname === link.href;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`px-2.5 xl:px-3.5 py-2 rounded-full whitespace-nowrap transition-all duration-200 ${isActive
-                      ? 'bg-slate-100 text-brand-teal font-bold shadow-xs'
-                      : 'text-slate-600 hover:text-brand-navy hover:bg-slate-50'
-                      }`}
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </nav>
-
-            {/* Right: Actions Center */}
-            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-
-              {/* Senior Mode Toggle (Available for Customers/Seniors) */}
+            {/* Right Dedicated Utility & Account Cluster */}
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+              {/* Senior Citizen Mode — Dedicated Accessibility Pill (Tablet & Desktop) */}
               {currentUser && currentUser.role === 'customer' && (
                 <button
+                  type="button"
                   onClick={toggleSeniorMode}
+                  aria-pressed={seniorMode}
                   aria-label="Toggle Senior Citizen Mode"
-                  className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs ${seniorMode
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 ring-2 ring-emerald-400/40'
-                    : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200/80 border border-slate-200'
-                    }`}
-                  title="Senior Citizen Mode: Enlarged text, high contrast, simplified booking"
+                  className={`hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 border ${
+                    seniorMode
+                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-600/20 hover:bg-emerald-700'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                  }`}
+                  title="Senior Citizen Mode: Enlarged text, high contrast, one-tap booking"
                 >
-                  <HeartHandshake className="w-4 h-4 text-emerald-400" />
-                  <span className="hidden md:inline">
-                    {seniorMode ? t.seniorModeOn || 'Senior Mode ON' : t.seniorMode || 'Senior Mode'}
+                  <HeartHandshake className={`w-4 h-4 ${seniorMode ? 'text-white' : 'text-emerald-600'}`} />
+                  <span className="whitespace-nowrap">{t.seniorMode || 'Senior Mode'}</span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      seniorMode
+                        ? 'bg-white text-emerald-700'
+                        : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {seniorMode ? 'ON' : 'OFF'}
                   </span>
                 </button>
               )}
 
-              {/* Multilingual Selector */}
-              <LanguageSelector variant="navbar" />
+              {/* Language Selection — Dedicated Globe Control (Tablet & Desktop) */}
+              <div className="hidden md:block">
+                <LanguageSelector variant="navbar" />
+              </div>
 
-              {/* Authenticated Controls */}
               {currentUser ? (
                 <>
-                  {/* Read Screen Aloud Button */}
+                  {/* Read Aloud (Tablet & Desktop) */}
                   <button
+                    type="button"
                     onClick={handleReadAloud}
-                    className="hidden sm:flex p-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-brand-navy rounded-full border border-slate-200 transition-colors"
+                    className="hidden md:inline-flex p-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-brand-navy rounded-full border border-slate-200 transition-all active:scale-95"
                     title={t.readAloud || 'Read Screen Aloud'}
                   >
                     <Volume2 className="w-4 h-4 text-brand-teal" />
                   </button>
 
-                  {/* Notification Bell with Dropdown */}
+                  {/* Notifications */}
                   <div className="relative" ref={notifRef}>
                     <button
+                      type="button"
                       onClick={() => setNotifPopoverOpen(!notifPopoverOpen)}
-                      className="p-2.5 sm:p-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-brand-navy rounded-full border border-slate-200 transition-colors relative min-w-[40px] min-h-[40px] flex items-center justify-center"
+                      className="p-2.5 sm:p-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-brand-navy rounded-full border border-slate-200 transition-all active:scale-95 relative min-w-[40px] min-h-[40px] flex items-center justify-center"
                       title="Notifications"
                     >
                       <Bell className="w-4 h-4" />
                       {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-bounce shadow-xs">
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs">
                           {unreadCount}
                         </span>
                       )}
                     </button>
 
-                    {/* Notification Popover Dropdown */}
                     {notifPopoverOpen && (
                       <div className="fixed inset-x-3 top-16 sm:inset-auto sm:absolute sm:right-0 sm:top-auto sm:mt-2 sm:w-96 max-h-[75dvh] overflow-y-auto bg-white border border-slate-200 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -240,7 +243,7 @@ export const Navbar: React.FC = () => {
                           </span>
                           <button
                             onClick={() => setNotifPopoverOpen(false)}
-                            className="text-slate-400 hover:text-slate-600 text-xs"
+                            className="text-slate-400 hover:text-slate-600 text-xs font-semibold"
                           >
                             {t.close || 'Close'}
                           </button>
@@ -255,8 +258,9 @@ export const Navbar: React.FC = () => {
                               <div
                                 key={n.id}
                                 onClick={() => markNotificationRead(n.id)}
-                                className={`py-2.5 px-1.5 text-xs cursor-pointer hover:bg-slate-50 rounded-xl transition-colors ${n.isRead ? 'opacity-60' : 'font-semibold text-slate-900'
-                                  }`}
+                                className={`py-2.5 px-1.5 text-xs cursor-pointer hover:bg-slate-50 rounded-xl transition-colors ${
+                                  n.isRead ? 'opacity-60' : 'font-semibold text-slate-900'
+                                }`}
                               >
                                 <div className="flex items-center justify-between text-brand-teal">
                                   <span>{n.title}</span>
@@ -271,16 +275,17 @@ export const Navbar: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Profile Avatar & Dropdown */}
-                  <div className="relative" ref={profileRef}>
+                  {/* Profile Avatar & Dropdown (Tablet & Desktop) */}
+                  <div className="relative hidden md:block" ref={profileRef}>
                     <button
+                      type="button"
                       onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                      className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+                      className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-full hover:bg-slate-100 transition-all border border-slate-200/80 bg-white active:scale-95"
                       aria-haspopup="true"
                       aria-expanded={profileDropdownOpen}
                       title="User Menu & Settings"
                     >
-                      <div className="w-8 h-8 rounded-full bg-brand-softBlue border border-brand-teal/20 overflow-hidden flex items-center justify-center text-xs font-bold text-brand-navy shadow-inner">
+                      <div className="w-8 h-8 rounded-full bg-brand-softBlue border border-brand-teal/20 overflow-hidden flex items-center justify-center text-xs font-bold text-brand-navy">
                         {currentUser.avatarUrl ? (
                           <img
                             src={currentUser.avatarUrl}
@@ -291,7 +296,7 @@ export const Navbar: React.FC = () => {
                           <User className="w-4 h-4 text-brand-teal" />
                         )}
                       </div>
-                      <div className="hidden sm:flex flex-col text-left">
+                      <div className="hidden lg:flex flex-col text-left">
                         <span className="text-xs font-bold text-slate-900 truncate max-w-[110px]">
                           {currentUser.name}
                         </span>
@@ -299,13 +304,11 @@ export const Navbar: React.FC = () => {
                           {currentUser.role.replace('_', ' ')}
                         </span>
                       </div>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                     </button>
 
-                    {/* Profile Dropdown Menu */}
                     {profileDropdownOpen && (
-                      <div className="fixed inset-x-3 top-16 sm:inset-auto sm:absolute sm:right-0 sm:top-auto sm:mt-2 sm:w-64 max-h-[75dvh] overflow-y-auto bg-white border border-slate-200 rounded-3xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
-                        {/* User Identity Header */}
+                      <div className="absolute right-0 mt-2 w-64 max-h-[75dvh] overflow-y-auto bg-white border border-slate-200 rounded-3xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
                         <div className="px-4 py-3 bg-slate-50 rounded-2xl mb-1 border border-slate-100">
                           <p className="text-sm font-bold text-slate-900 truncate">
                             {currentUser.name}
@@ -316,7 +319,6 @@ export const Navbar: React.FC = () => {
                           </span>
                         </div>
 
-                        {/* Navigation Items */}
                         <div className="space-y-0.5 text-xs font-semibold text-slate-700">
                           <Link
                             href="/profile"
@@ -324,7 +326,7 @@ export const Navbar: React.FC = () => {
                             className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-100 rounded-xl transition-colors"
                           >
                             <User className="w-4 h-4 text-slate-500" />
-                            <span>{t.navProfile || 'Profile Settings'}</span>
+                            <span>{t.navProfile || 'Profile'}</span>
                           </Link>
                           <Link
                             href="/profile?tab=settings"
@@ -332,15 +334,7 @@ export const Navbar: React.FC = () => {
                             className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-100 rounded-xl transition-colors"
                           >
                             <Settings className="w-4 h-4 text-slate-500" />
-                            <span>{t.tabPreferences || 'Account Settings'}</span>
-                          </Link>
-                          <Link
-                            href="/profile?tab=notifications"
-                            onClick={() => setProfileDropdownOpen(false)}
-                            className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-100 rounded-xl transition-colors"
-                          >
-                            <Bell className="w-4 h-4 text-slate-500" />
-                            <span>{t.navNotifications || 'Notifications'}</span>
+                            <span>{t.tabPreferences || 'Settings'}</span>
                           </Link>
                           <Link
                             href={getHelpSupportLink()}
@@ -352,10 +346,8 @@ export const Navbar: React.FC = () => {
                           </Link>
                         </div>
 
-                        {/* Visual Divider */}
                         <div className="my-1.5 border-t border-slate-100" />
 
-                        {/* Distinguishable Logout Button */}
                         <button
                           type="button"
                           onClick={() => {
@@ -372,11 +364,10 @@ export const Navbar: React.FC = () => {
                   </div>
                 </>
               ) : (
-                /* Unauthenticated / Visitor Actions */
-                <div className="hidden sm:flex items-center gap-2">
+                <div className="hidden md:flex items-center gap-2">
                   <Link
                     href="/login"
-                    className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-brand-navy hover:bg-slate-100 rounded-full transition-all"
+                    className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-brand-navy hover:bg-slate-100 rounded-full transition-all active:scale-95"
                   >
                     {t.navLogin || 'Sign In'}
                   </Link>
@@ -392,68 +383,148 @@ export const Navbar: React.FC = () => {
 
               {/* Mobile Hamburger Toggle */}
               <button
+                type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2.5 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="md:hidden p-2.5 text-slate-700 hover:text-slate-900 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label="Toggle mobile menu"
+                aria-expanded={mobileMenuOpen}
               >
-                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-3 max-h-[calc(100dvh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
-            {/* Quick Accessibility Actions on Mobile */}
-            {currentUser && (
-              <div className="flex flex-wrap gap-2 pb-2 border-b border-slate-100">
-                {currentUser.role === 'customer' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      toggleSeniorMode();
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`flex-1 min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold ${
-                      seniorMode
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-100 text-slate-800 border border-slate-200'
+        {/* DEDICATED SECONDARY NAVIGATION ROW (Tablet & Desktop: zero overlap with Utility/Accessibility cluster!) */}
+        <div className="hidden md:block border-t border-slate-100 bg-slate-50/70">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav
+              aria-label="Primary Navigation"
+              className="flex items-center gap-1.5 py-2 overflow-x-auto"
+            >
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = pathname === link.href;
+
+                if (link.isPrimary) {
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 hover:-translate-y-0.5 active:scale-95 shadow-sm ${
+                        isActive
+                          ? 'bg-brand-navy text-white ring-2 ring-brand-teal/40'
+                          : 'bg-brand-teal hover:bg-brand-tealDark text-white shadow-brand-teal/20'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5 shrink-0" />
+                      <span>{link.label}</span>
+                    </Link>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
+                      isActive
+                        ? 'bg-white text-brand-teal font-bold shadow-xs border border-brand-teal/30'
+                        : 'text-slate-600 hover:text-brand-navy hover:bg-white/90 hover:shadow-xs border border-transparent'
                     }`}
                   >
-                    <HeartHandshake className="w-4 h-4 text-emerald-500" />
-                    <span>{seniorMode ? t.seniorModeOn || 'Senior Mode ON' : t.seniorMode || 'Senior Mode'}</span>
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-brand-teal' : 'text-slate-400'}`} />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+
+        {/* MOBILE NAVIGATION DRAWER (320px - 767px) */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-t border-slate-200 px-4 pt-3 pb-6 space-y-4 max-h-[calc(100dvh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+            {/* Dedicated Accessibility & Language Section */}
+            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Accessibility & Language
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <LanguageSelector variant="compact" />
+
+                {currentUser && (
+                  <button
+                    type="button"
+                    onClick={handleReadAloud}
+                    className="min-h-[40px] px-3 py-1.5 bg-white text-slate-800 rounded-full border border-slate-200 text-xs font-bold flex items-center gap-1.5 active:scale-95"
+                  >
+                    <Volume2 className="w-3.5 h-3.5 text-brand-teal" />
+                    <span>{t.readAloud || 'Read Aloud'}</span>
                   </button>
                 )}
+              </div>
+
+              {currentUser && currentUser.role === 'customer' && (
                 <button
                   type="button"
-                  onClick={handleReadAloud}
-                  className="min-h-[44px] px-3 py-2 bg-slate-100 text-slate-800 rounded-xl border border-slate-200 text-xs font-bold flex items-center justify-center gap-1.5"
+                  onClick={() => {
+                    toggleSeniorMode();
+                    setMobileMenuOpen(false);
+                  }}
+                  aria-pressed={seniorMode}
+                  className={`w-full min-h-[44px] flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 border ${
+                    seniorMode
+                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                      : 'bg-white text-slate-800 border-slate-200'
+                  }`}
                 >
-                  <Volume2 className="w-4 h-4 text-brand-teal" />
-                  <span>{t.readAloud || 'Read Aloud'}</span>
+                  <span className="flex items-center gap-2">
+                    <HeartHandshake className={`w-4 h-4 ${seniorMode ? 'text-white' : 'text-emerald-600'}`} />
+                    <span>{t.seniorMode || 'Senior Citizen Mode'}</span>
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                      seniorMode ? 'bg-white text-emerald-700' : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {seniorMode ? 'ON' : 'OFF'}
+                  </span>
                 </button>
-              </div>
-            )}
-            {/* Nav Links */}
-            <div className="space-y-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-brand-navy transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
+              )}
             </div>
 
-            {/* Mobile Authenticated or Guest Block */}
+            {/* Role-Based Navigation Links */}
+            <div className="space-y-1.5">
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-3.5 py-3 min-h-[44px] rounded-xl text-sm font-semibold transition-all active:scale-98 ${
+                      link.isPrimary
+                        ? 'bg-brand-teal text-white font-bold shadow-sm'
+                        : isActive
+                        ? 'bg-brand-softBlue text-brand-teal font-bold border border-brand-teal/20'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-brand-navy'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Mobile Account / Auth Block */}
             {currentUser ? (
-              <div className="pt-3 border-t border-slate-100 space-y-2">
-                <div className="flex items-center gap-3 px-3 py-2 bg-slate-50 rounded-2xl">
-                  <div className="w-10 h-10 rounded-full bg-brand-softBlue border border-brand-teal/20 overflow-hidden flex items-center justify-center font-bold text-brand-navy">
+              <div className="pt-3 border-t border-slate-100 space-y-2.5">
+                <div className="flex items-center gap-3 px-3 py-2.5 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-10 h-10 rounded-full bg-brand-softBlue border border-brand-teal/20 overflow-hidden flex items-center justify-center font-bold text-brand-navy shrink-0">
                     {currentUser.avatarUrl ? (
                       <img
                         src={currentUser.avatarUrl}
@@ -464,8 +535,8 @@ export const Navbar: React.FC = () => {
                       <User className="w-5 h-5 text-brand-teal" />
                     )}
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{currentUser.name}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900 truncate">{currentUser.name}</p>
                     <p className="text-xs text-brand-teal font-semibold uppercase">
                       {currentUser.role.replace('_', ' ')}
                     </p>
@@ -476,16 +547,18 @@ export const Navbar: React.FC = () => {
                   <Link
                     href="/profile"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="p-2.5 bg-slate-100 rounded-xl text-slate-700 text-center"
+                    className="min-h-[44px] flex items-center justify-center gap-1.5 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-800"
                   >
-                    {t.navProfile || 'My Profile'}
+                    <User className="w-3.5 h-3.5" />
+                    <span>{t.navProfile || 'Profile'}</span>
                   </Link>
                   <Link
                     href="/profile?tab=settings"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="p-2.5 bg-slate-100 rounded-xl text-slate-700 text-center"
+                    className="min-h-[44px] flex items-center justify-center gap-1.5 p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-800"
                   >
-                    {t.tabPreferences || 'Settings'}
+                    <Settings className="w-3.5 h-3.5" />
+                    <span>{t.tabPreferences || 'Settings'}</span>
                   </Link>
                 </div>
 
@@ -495,10 +568,10 @@ export const Navbar: React.FC = () => {
                     setMobileMenuOpen(false);
                     setLogoutModalOpen(true);
                   }}
-                  className="w-full flex items-center justify-center gap-2 p-2.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors"
+                  className="w-full min-h-[44px] flex items-center justify-center gap-2 p-2.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>{t.navLogout || 'Logout'}</span>
+                  <span>{t.navLogout || 'Sign Out'}</span>
                 </button>
               </div>
             ) : (
@@ -506,14 +579,14 @@ export const Navbar: React.FC = () => {
                 <Link
                   href="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full py-2.5 text-center text-sm font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
+                  className="w-full min-h-[44px] flex items-center justify-center text-sm font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
                 >
-                  {t.navLogin || 'Login'}
+                  {t.navLogin || 'Sign In'}
                 </Link>
                 <Link
                   href="/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full py-2.5 text-center text-sm font-bold text-white bg-brand-teal rounded-xl hover:bg-brand-tealDark shadow-sm transition-colors"
+                  className="w-full min-h-[44px] flex items-center justify-center text-sm font-bold text-white bg-brand-teal rounded-xl hover:bg-brand-tealDark shadow-sm transition-colors"
                 >
                   {t.navRegister || 'Get Started'}
                 </Link>
@@ -523,7 +596,6 @@ export const Navbar: React.FC = () => {
         )}
       </header>
 
-      {/* Logout Confirmation Dialog */}
       <LogoutConfirmModal
         isOpen={logoutModalOpen}
         onClose={() => setLogoutModalOpen(false)}
