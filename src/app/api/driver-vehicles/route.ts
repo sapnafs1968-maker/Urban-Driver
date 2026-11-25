@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readDb, withDbLock, writeDb } from '@/lib/server/db';
+import { getSafeErrorMessage, readDb, withDbLock, writeDb } from '@/lib/server/db';
 import { DriverVehicle } from '@/types';
 
 export async function GET(req: NextRequest) {
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, vehicle: updatedVehicle }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to save driver vehicle' },
+      { success: false, error: getSafeErrorMessage(err, 'Failed to save driver vehicle') },
       { status: 500 }
     );
   }

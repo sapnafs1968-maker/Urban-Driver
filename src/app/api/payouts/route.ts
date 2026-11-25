@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readDb, updatePayoutStatusAtomic } from '@/lib/server/db';
+import { getSafeErrorMessage, readDb, updatePayoutStatusAtomic } from '@/lib/server/db';
 import { PayoutStatus } from '@/types';
 
 export async function GET(req: NextRequest) {
@@ -73,7 +73,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true, payout: updated });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to update payout' },
+      { success: false, error: getSafeErrorMessage(err, 'Failed to update payout') },
       { status: 500 }
     );
   }

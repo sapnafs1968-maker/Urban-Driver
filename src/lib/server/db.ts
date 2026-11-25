@@ -1,4 +1,5 @@
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import {
   Booking,
@@ -50,8 +51,47 @@ export interface ServerDbState {
   processedClientRequestIds: string[];
 }
 
-const DATA_DIR = path.join(process.cwd(), '.data');
-const DB_FILE = path.join(DATA_DIR, 'urban-driver-db.json');
+const globalForDb = globalThis as unknown as {
+  __urbanDriverDb?: ServerDbState;
+  __urbanDriverDbFsWarned?: boolean;
+};
+
+function isServerlessRuntime(): boolean {
+  return Boolean(
+    process.env.VERCEL ||
+      process.env.VERCEL_ENV ||
+      process.env.AWS_LAMBDA_FUNCTION_NAME ||
+      process.env.NETLIFY ||
+      process.env.CF_PAGES
+  );
+}
+
+function getStorageLocation(): { dataDir: string; dbFile: string } {
+  const dataDir = isServerlessRuntime()
+    ? path.join(os.tmpdir(), 'urban-driver-data')
+    : path.join(process.cwd(), '.data');
+  return {
+    dataDir,
+    dbFile: path.join(dataDir, 'urban-driver-db.json'),
+  };
+}
+
+function warnFsOnce(action: string, err: unknown): void {
+  if (!globalForDb.__urbanDriverDbFsWarned) {
+    globalForDb.__urbanDriverDbFsWarned = true;
+    console.warn(`[db] Filesystem ${action} unavailable, using in-memory store:`, err);
+  }
+}
+
+export function getSafeErrorMessage(err: unknown, fallback: string): string {
+  const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+  if (!msg) return fallback;
+  if (/ENOENT|EACCES|EROFS|EPERM|\/var\/task|mkdir|renameSync|writeFile/i.test(msg)) {
+    console.error('[api] Suppressed internal filesystem error:', msg);
+    return fallback;
+  }
+  return msg;
+}
 
 // Async mutex to serialize critical sections and prevent race conditions
 let lockQueue: Promise<void> = Promise.resolve();
@@ -92,31 +132,52 @@ function getInitialDbState(): ServerDbState {
 }
 
 export function readDb(): ServerDbState {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(DB_FILE)) {
-      const initial = getInitialDbState();
-      fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2), 'utf-8');
-      return initial;
-    }
-    const raw = fs.readFileSync(DB_FILE, 'utf-8');
-    const parsed = JSON.parse(raw) as ServerDbState;
-    return parsed;
-  } catch (err) {
-    console.error('Error reading DB file, falling back to initial state:', err);
-    return getInitialDbState();
+  if (globalForDb.__urbanDriverDb) {
+    return globalForDb.__urbanDriverDb;
   }
+
+  const { dataDir, dbFile } = getStorageLocation();
+  try {
+    if (fs.existsSync(dbFile)) {
+      const raw = fs.readFileSync(dbFile, 'utf-8');
+      const parsed = JSON.parse(raw) as ServerDbState;
+      globalForDb.__urbanDriverDb = parsed;
+      return parsed;
+    }
+  } catch (err) {
+    warnFsOnce('read', err);
+  }
+
+  const initial = getInitialDbState();
+  globalForDb.__urbanDriverDb = initial;
+
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(dbFile, JSON.stringify(initial, null, 2), 'utf-8');
+  } catch (err) {
+    warnFsOnce('seed', err);
+  }
+
+  return initial;
 }
 
 export function writeDb(state: ServerDbState): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+  // Always update in-memory state so serverless invocations never lose writes or crash
+  globalForDb.__urbanDriverDb = state;
+
+  const { dataDir, dbFile } = getStorageLocation();
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    const tmpFile = `${dbFile}.tmp`;
+    fs.writeFileSync(tmpFile, JSON.stringify(state, null, 2), 'utf-8');
+    fs.renameSync(tmpFile, dbFile);
+  } catch (err) {
+    warnFsOnce('write', err);
   }
-  const tmpFile = `${DB_FILE}.tmp`;
-  fs.writeFileSync(tmpFile, JSON.stringify(state, null, 2), 'utf-8');
-  fs.renameSync(tmpFile, DB_FILE);
 }
 
 export function hasDriverActiveBooking(db: ServerDbState, driverId: string): boolean {

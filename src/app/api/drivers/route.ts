@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hasDriverActiveBooking, readDb, withDbLock, writeDb } from '@/lib/server/db';
+import { getSafeErrorMessage, hasDriverActiveBooking, readDb, withDbLock, writeDb } from '@/lib/server/db';
 import { Driver } from '@/types';
 
 export async function GET(req: NextRequest) {
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, driver: saved }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to register driver' },
+      { success: false, error: getSafeErrorMessage(err, 'Failed to register driver') },
       { status: 500 }
     );
   }
@@ -152,7 +152,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true, driver: result.driver });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to update driver' },
+      { success: false, error: getSafeErrorMessage(err, 'Failed to update driver') },
       { status: 500 }
     );
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readDb, withDbLock, writeDb } from '@/lib/server/db';
+import { getSafeErrorMessage, readDb, withDbLock, writeDb } from '@/lib/server/db';
 import { SavedDestination } from '@/types';
 
 export async function GET(req: NextRequest) {
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to save destination' },
+      { success: false, error: getSafeErrorMessage(err, 'Failed to save destination') },
       { status: 500 }
     );
   }

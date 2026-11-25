@@ -196,16 +196,29 @@ export const SeniorModeContainer: React.FC<SeniorModeContainerProps> = () => {
 
   const handleDetectGpsPickup = () => {
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      setConfirmedPickup(t.locationDetecting || 'Detecting your current location...');
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setPickupLatLng({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          setConfirmedPickup(
-            `Current GPS Location (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`
-          );
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setPickupLatLng({ lat: latitude, lng: longitude });
+          let resolved = `Current GPS Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+          try {
+            const res = await fetch(
+              `/api/geocode/reverse?lat=${encodeURIComponent(latitude)}&lng=${encodeURIComponent(longitude)}`
+            );
+            if (res.ok) {
+              const json = await res.json();
+              if (json.address) resolved = json.address;
+            }
+          } catch {
+            // Keep coordinate fallback
+          }
+          setConfirmedPickup(resolved);
         },
         () => {
           setConfirmedPickup(homeDestination?.address || '142, 6th Main, Defence Colony, Indiranagar, Bengaluru');
-        }
+        },
+        { timeout: 8000, enableHighAccuracy: true }
       );
     } else {
       setConfirmedPickup(homeDestination?.address || '142, 6th Main, Defence Colony, Indiranagar, Bengaluru');

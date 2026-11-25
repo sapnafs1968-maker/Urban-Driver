@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hasDriverActiveBooking, readDb, withDbLock, writeDb } from '@/lib/server/db';
+import { getSafeErrorMessage, hasDriverActiveBooking, readDb, withDbLock, writeDb } from '@/lib/server/db';
 import { TrustedDriver } from '@/types';
 
 export async function GET(req: NextRequest) {
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: entry }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to add trusted driver' },
+      { success: false, error: getSafeErrorMessage(err, 'Failed to add trusted driver') },
       { status: 500 }
     );
   }
@@ -128,7 +128,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true, data: updatedList });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to update trusted driver role' },
+      { success: false, error: getSafeErrorMessage(err, 'Failed to update trusted driver role') },
       { status: 500 }
     );
   }
@@ -160,7 +160,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to remove trusted driver' },
+      { success: false, error: getSafeErrorMessage(err, 'Failed to remove trusted driver') },
       { status: 500 }
     );
   }

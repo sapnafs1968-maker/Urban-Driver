@@ -40,7 +40,8 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
 
   const handleUseCurrentLocation = () => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
+      setDetectedStatus('Geolocation is not supported by your browser.');
+      setTimeout(() => setDetectedStatus(null), 4000);
       return;
     }
 
@@ -48,23 +49,36 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
     setDetectedStatus(t.locationDetecting);
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsDetecting(false);
+      async (pos) => {
         const { latitude, longitude } = pos.coords;
-        // In local/demo, map to Indiranagar Hub coordinates
-        const formatted = `142, Defence Colony, Indiranagar (GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
-        onChange(formatted, { lat: latitude, lng: longitude });
+        let resolvedAddress = `Current GPS Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+        try {
+          const res = await fetch(
+            `/api/geocode/reverse?lat=${encodeURIComponent(latitude)}&lng=${encodeURIComponent(longitude)}`
+          );
+          if (res.ok) {
+            const json = await res.json();
+            if (json.address) resolvedAddress = json.address;
+          }
+        } catch {
+          // Keep coordinate fallback
+        }
+        setIsDetecting(false);
+        onChange(resolvedAddress, { lat: latitude, lng: longitude });
         setDetectedStatus(t.locationDetected);
         setTimeout(() => setDetectedStatus(null), 3000);
       },
       (err) => {
         setIsDetecting(false);
         console.warn('Geolocation error:', err);
-        // Fallback default
         const fallback = '6th Main, Defence Colony, Indiranagar, Bengaluru';
         onChange(fallback, { lat: 12.9784, lng: 77.6408 });
-        setDetectedStatus(t.locationDetected);
-        setTimeout(() => setDetectedStatus(null), 3000);
+        setDetectedStatus(
+          err?.code === 1
+            ? 'Location permission denied — using default hub'
+            : t.locationDetected
+        );
+        setTimeout(() => setDetectedStatus(null), 4000);
       },
       { timeout: 8000, enableHighAccuracy: true }
     );

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createBookingAtomic, readDb } from '@/lib/server/db';
+import { createBookingAtomic, getSafeErrorMessage, readDb } from '@/lib/server/db';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     );
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to create booking' },
+      { success: false, error: getSafeErrorMessage(err, 'Failed to create booking') },
       { status: 500 }
     );
   }

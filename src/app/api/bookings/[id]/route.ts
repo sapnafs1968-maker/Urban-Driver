@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateBookingStatusAtomic } from '@/lib/server/db';
+import { getSafeErrorMessage, updateBookingStatusAtomic } from '@/lib/server/db';
 import { BookingStatus } from '@/types';
 
 export async function PATCH(
@@ -41,7 +41,7 @@ export async function PATCH(
     });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to update booking' },
+      { success: false, error: getSafeErrorMessage(err, 'Failed to update booking') },
       { status: 500 }
     );
   }
@@ -74,7 +74,7 @@ export async function DELETE(
     });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to cancel booking' },
+      { success: false, error: getSafeErrorMessage(err, 'Failed to cancel booking') },
       { status: 500 }
     );
   }
